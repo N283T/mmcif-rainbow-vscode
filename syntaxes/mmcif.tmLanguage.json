@@ -1,0 +1,38 @@
+{
+  "scopeName": "source.mmcif",
+  "name": "mmCIF",
+  "patterns": [
+    {
+      "name": "comment.line.number-sign.mmcif",
+      "match": "#.*$"
+    },
+    {
+      "name": "keyword.control.loop.mmcif",
+      "match": "\\bloop_\\b"
+    },
+    {
+      "name": "keyword.control.data.mmcif",
+      "match": "\\bdata_[A-Za-z0-9_.-]*"
+    },
+    {
+      "name": "entity.name.tag.mmcif",
+      "match": "^\\s*_[A-Za-z0-9_.-]+"
+    },
+    {
+      "name": "string.quoted.single.mmcif",
+      "match": "'([^']*)'"
+    },
+    {
+      "name": "string.quoted.double.mmcif",
+      "match": "\"([^\"]*)\""
+    }
+  ],
+  "repository": {},
+  "fileTypes": [
+    "cif",
+    "mmcif"
+  ],
+  "uuid": "c4d40ef4-5cfe-4826-9fc7-4f7db70d8fe1"
+}
+
+

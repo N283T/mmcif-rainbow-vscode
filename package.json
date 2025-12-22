@@ -1,0 +1,126 @@
+{
+  "name": "mmcif-rainbow",
+  "displayName": "mmCIF Rainbow Columns",
+  "description": "Column-based coloring for mmCIF loops.",
+  "version": "0.0.1",
+  "publisher": "your-publisher-id",
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=20"
+  },
+  "icon": "resources/icon.png",
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:mmcif",
+    "onCommand:mmcif-rainbow.helloWorld"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "mmcif",
+        "aliases": [
+          "mmCIF",
+          "MMCIF"
+        ],
+        "extensions": [
+          ".cif",
+          ".mmcif"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "mmcif",
+        "scopeName": "source.mmcif",
+        "path": "./syntaxes/mmcif.tmLanguage.json"
+      }
+    ],
+    "semanticTokenTypes": [
+      { "id": "cifCategory", "description": "mmCIF category name" },
+      { "id": "cifColumn1", "description": "mmCIF loop column 1" },
+      { "id": "cifColumn2", "description": "mmCIF loop column 2" },
+      { "id": "cifColumn3", "description": "mmCIF loop column 3" },
+      { "id": "cifColumn4", "description": "mmCIF loop column 4" },
+      { "id": "cifColumn5", "description": "mmCIF loop column 5" },
+      { "id": "cifColumn6", "description": "mmCIF loop column 6" },
+      { "id": "cifColumn7", "description": "mmCIF loop column 7" },
+      { "id": "cifColumn8", "description": "mmCIF loop column 8" }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "mmcif",
+        "scopes": {
+          "cifCategory": ["entity.name.namespace.mmcif"],
+          "cifColumn1": ["variable.other.mmcif.column1"],
+          "cifColumn2": ["variable.other.mmcif.column2"],
+          "cifColumn3": ["variable.other.mmcif.column3"],
+          "cifColumn4": ["variable.other.mmcif.column4"],
+          "cifColumn5": ["variable.other.mmcif.column5"],
+          "cifColumn6": ["variable.other.mmcif.column6"],
+          "cifColumn7": ["variable.other.mmcif.column7"],
+          "cifColumn8": ["variable.other.mmcif.column8"]
+        }
+      }
+    ],
+    "configurationDefaults": {
+      "[mmcif]": {
+        "editor.semanticHighlighting.enabled": true,
+        "editor.tokenColorCustomizations": {
+          "semanticTokenColors": {
+            "cifCategory": "#bbbbbb",
+            "cifColumn1": "#ff6b6b",
+            "cifColumn2": "#f4a261",
+            "cifColumn3": "#ffd166",
+            "cifColumn4": "#8bd450",
+            "cifColumn5": "#4dd0e1",
+            "cifColumn6": "#64b5f6",
+            "cifColumn7": "#ba68c8",
+            "cifColumn8": "#f48fb1"
+          }
+        },
+        "editor.semanticTokenColorCustomizations": {
+          "enabled": true,
+          "rules": {
+            "cifCategory": { "foreground": "#bbbbbb" },
+            "cifColumn1": { "foreground": "#ff6b6b", "bold": true },
+            "cifColumn2": { "foreground": "#f4a261", "bold": true },
+            "cifColumn3": { "foreground": "#ffd166", "bold": true },
+            "cifColumn4": { "foreground": "#8bd450", "bold": true },
+            "cifColumn5": { "foreground": "#4dd0e1", "bold": true },
+            "cifColumn6": { "foreground": "#64b5f6", "bold": true },
+            "cifColumn7": { "foreground": "#ba68c8", "bold": true },
+            "cifColumn8": { "foreground": "#f48fb1", "bold": true }
+          }
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "mmcif-rainbow.helloWorld",
+        "title": "mmCIF Rainbow: Hello World"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "echo \"No lint configured\"",
+    "test": "echo \"No tests configured\""
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.6.0"
+  },
+  "volta": {
+    "node": "24.11.1",
+    "npm": "11.6.2"
+  }
+}
+
+

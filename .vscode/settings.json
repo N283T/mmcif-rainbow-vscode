@@ -1,0 +1,31 @@
+{
+  "editor.semanticHighlighting.enabled": true,
+  "editor.tokenColorCustomizations": {
+    "semanticTokenColors": {
+      "cifCategory": "#bbbbbb",
+      "cifColumn1": "#ff6b6b",
+      "cifColumn2": "#f4a261",
+      "cifColumn3": "#ffd166",
+      "cifColumn4": "#8bd450",
+      "cifColumn5": "#4dd0e1",
+      "cifColumn6": "#64b5f6",
+      "cifColumn7": "#ba68c8",
+      "cifColumn8": "#f48fb1"
+    }
+  },
+  "editor.semanticTokenColorCustomizations": {
+    "enabled": true,
+    "rules": {
+      "cifCategory": { "foreground": "#bbbbbb" },
+      "cifColumn1": { "foreground": "#ff6b6b", "bold": true },
+      "cifColumn2": { "foreground": "#f4a261", "bold": true },
+      "cifColumn3": { "foreground": "#ffd166", "bold": true },
+      "cifColumn4": { "foreground": "#8bd450", "bold": true },
+      "cifColumn5": { "foreground": "#4dd0e1", "bold": true },
+      "cifColumn6": { "foreground": "#64b5f6", "bold": true },
+      "cifColumn7": { "foreground": "#ba68c8", "bold": true },
+      "cifColumn8": { "foreground": "#f48fb1", "bold": true }
+    }
+  }
+}
+
