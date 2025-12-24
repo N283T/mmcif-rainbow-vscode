@@ -42,150 +42,55 @@
       {
         "language": "mmcif",
         "scopes": {
-          "rainbow1": ["rainbow1"],
-          "rainbow2": ["keyword.rainbow2"],
-          "rainbow3": ["entity.name.function.rainbow3"],
-          "rainbow4": ["comment.rainbow4"],
-          "rainbow5": ["string.rainbow5"],
-          "rainbow6": ["variable.parameter.rainbow6"],
-          "rainbow7": ["constant.numeric.rainbow7"],
-          "rainbow8": ["entity.name.type.rainbow8"],
-          "rainbow9": ["markup.bold.rainbow9"],
-          "rainbow10": ["invalid.rainbow10"]
+          "rainbow1": [
+            "entity.name.type",
+            "entity.name.class"
+          ],
+          "rainbow2": [
+            "keyword",
+            "storage.type"
+          ],
+          "rainbow3": [
+            "string",
+            "string.quoted"
+          ],
+          "rainbow4": [
+            "variable.parameter",
+            "variable.other"
+          ],
+          "rainbow5": [
+            "constant.numeric",
+            "constant.language"
+          ],
+          "rainbow6": [
+            "support.function",
+            "entity.name.function"
+          ],
+          "rainbow7": [
+            "support.class",
+            "entity.name.type"
+          ],
+          "rainbow8": [
+            "entity.name.section",
+            "markup.heading"
+          ],
+          "rainbow9": [
+            "keyword.control",
+            "keyword.operator"
+          ],
+          "rainbow10": [
+            "variable.language",
+            "constant.character"
+          ]
         }
       }
     ],
     "configurationDefaults": {
       "[mmcif]": {
         "editor.semanticHighlighting.enabled": true,
-        "editor.semanticTokenColorCustomizations": {
-          "enabled": true,
-          "rules": {
-            "rainbow1": {
-              "foreground": "#808080",
-              "fontStyle": ""
-            },
-            "rainbow2": {
-              "foreground": "#ff6b6b",
-              "fontStyle": ""
-            },
-            "rainbow3": {
-              "foreground": "#f4a261",
-              "fontStyle": ""
-            },
-            "rainbow4": {
-              "foreground": "#ffd166",
-              "fontStyle": ""
-            },
-            "rainbow5": {
-              "foreground": "#8bd450",
-              "fontStyle": ""
-            },
-            "rainbow6": {
-              "foreground": "#4dd0e1",
-              "fontStyle": ""
-            },
-            "rainbow7": {
-              "foreground": "#64b5f6",
-              "fontStyle": ""
-            },
-            "rainbow8": {
-              "foreground": "#ba68c8",
-              "fontStyle": ""
-            },
-            "rainbow9": {
-              "foreground": "#f48fb1",
-              "fontStyle": ""
-            },
-            "rainbow10": {
-              "foreground": "#ff9800",
-              "fontStyle": ""
-            }
-          }
-        },
-        "editor.tokenColorCustomizations": {
-          "textMateRules": [
-            {
-              "scope": "rainbow1",
-              "settings": {
-                "foreground": "#808080"
-              }
-            },
-            {
-              "scope": "keyword.rainbow2",
-              "settings": {
-                "foreground": "#ff6b6b"
-              }
-            },
-            {
-              "scope": "entity.name.function.rainbow3",
-              "settings": {
-                "foreground": "#f4a261"
-              }
-            },
-            {
-              "scope": "comment.rainbow4",
-              "settings": {
-                "foreground": "#ffd166"
-              }
-            },
-            {
-              "scope": "string.rainbow5",
-              "settings": {
-                "foreground": "#8bd450"
-              }
-            },
-            {
-              "scope": "variable.parameter.rainbow6",
-              "settings": {
-                "foreground": "#4dd0e1"
-              }
-            },
-            {
-              "scope": "constant.numeric.rainbow7",
-              "settings": {
-                "foreground": "#64b5f6"
-              }
-            },
-            {
-              "scope": "entity.name.type.rainbow8",
-              "settings": {
-                "foreground": "#ba68c8"
-              }
-            },
-            {
-              "scope": "markup.bold.rainbow9",
-              "settings": {
-                "foreground": "#f48fb1"
-              }
-            },
-            {
-              "scope": "invalid.rainbow10",
-              "settings": {
-                "foreground": "#ff9800"
-              }
-            }
-          ]
-        }
+        "editor.bracketPairColorization.enabled": false
       }
-    },
-    "commands": [
-      {
-        "command": "mmcif-rainbow.showDebugInfo",
-        "title": "Show Debug Info",
-        "category": "mmCIF Rainbow"
-      },
-      {
-        "command": "mmcif-rainbow.debugParse",
-        "title": "Debug: Parse Current File",
-        "category": "mmCIF Rainbow"
-      },
-      {
-        "command": "mmcif-rainbow.debugColor",
-        "title": "Debug: Token Color at Cursor",
-        "category": "mmCIF Rainbow"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

@@ -24,80 +24,72 @@ interface LoopBlock {
   fieldNames: Array<{ line: number; start: number; length: number; fieldName: string }>;
   namesDefined: boolean; // Flag to track if column names are defined
   isInLoopBlock: boolean; // Flag to track if this loop is inside a loop_ block
+  processedValueCount: number; // Counter for determining column index in stream
   dataLines: Array<{
     line: number;
     valueRanges: Array<{ start: number; length: number; columnIndex: number }>;
   }>;
 }
 
-let debugOutputChannel: vscode.OutputChannel | null = null;
-let statusBarItem: vscode.StatusBarItem | null = null;
-
 class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
-  private debugOutputChannel: vscode.OutputChannel | null = null;
-
-  constructor(debugOutputChannel?: vscode.OutputChannel) {
-    this.debugOutputChannel = debugOutputChannel || null;
-  }
-
-  private debugLog(message: string) {
-    if (this.debugOutputChannel) {
-      this.debugOutputChannel.appendLine(`[${new Date().toISOString()}] ${message}`);
-    }
-  }
-
   provideDocumentSemanticTokens(
     document: vscode.TextDocument
   ): vscode.ProviderResult<vscode.SemanticTokens> {
-    this.debugLog(`Parsing document: ${document.fileName}`);
     const builder = new vscode.SemanticTokensBuilder(tokensLegend);
-    const loops = this.parseLoops(document);
-    
-    this.debugLog(`Found ${loops.length} loop(s)`);
+    const loops = this.parseLoops(document, builder);
 
-    let totalTokens = 0;
+    let categoryItemCount = 0;
+    let lastCategory = "";
+
     for (const loop of loops) {
-      this.debugLog(
-        `Loop at line ${loop.startLine + 1}: ${loop.categoryName} with ${loop.fieldNames.length} fields (inLoopBlock: ${loop.isInLoopBlock})`
-      );
-      
+      // Determine color index base for this loop/item
+      let colorBaseIndex = 0;
+
+      if (loop.isInLoopBlock) {
+        // Loop blocks handle their own internal rotation
+        // We can reset the single-item counter here if we want, or just ignore it
+        lastCategory = ""; // Reset category tracking when hitting a loop block
+      } else {
+        // Single Item
+        if (loop.categoryName !== lastCategory) {
+          categoryItemCount = 0;
+          lastCategory = loop.categoryName;
+        } else {
+          categoryItemCount++;
+        }
+        colorBaseIndex = categoryItemCount;
+      }
+
       // Color each field name line
       for (let fieldIndex = 0; fieldIndex < loop.fieldNames.length; fieldIndex++) {
         const field = loop.fieldNames[fieldIndex];
         const lineText = document.lineAt(field.line).text;
-        const match = lineText.match(/^(\s*)(_[A-Za-z0-9_]+)\.([A-Za-z0-9_]+)(\s|$)/);
-        
+        const match = lineText.match(/^(\s*)(_[A-Za-z0-9_]+)\.([A-Za-z0-9_\[\]]+)(\s|$)/);
+
         if (match) {
           const leadingSpaces = match[1]?.length || 0;
           const categoryName = match[2];
           const fieldName = match[3];
-          
+
           // Color category name (rainbow1) - includes the dot
           const categoryStart = leadingSpaces;
           const categoryLength = categoryName.length + 1; // +1 for the dot
           builder.push(field.line, categoryStart, categoryLength, 0, 0); // rainbow1
-          
+
           // Color field name (rainbow2-rainbow10, cycling)
           const fieldStart = leadingSpaces + categoryName.length + 1; // +1 for the dot
           const fieldLength = fieldName.length;
-          
+
           let tokenTypeIndex: number;
           if (loop.isInLoopBlock) {
             // Inside loop_ block: use field index within the loop
-            tokenTypeIndex = 1 + (fieldIndex % 9); // rainbow2-rainbow10
+            tokenTypeIndex = 1 + (fieldIndex % 8); // rainbow2-rainbow9
           } else {
-            // Outside loop_ block (single-item lines): always use first field color
-            tokenTypeIndex = 1; // rainbow2
+            // Outside loop_ block: use the category counter
+            tokenTypeIndex = 1 + (colorBaseIndex % 8);
           }
-          
+
           builder.push(field.line, fieldStart, fieldLength, tokenTypeIndex, 0);
-          
-          totalTokens += 2;
-          this.debugLog(
-            `  Header field ${fieldIndex + 1}: ${fieldName} (line ${
-              field.line + 1
-            }, token type: rainbow${tokenTypeIndex + 1}, isInLoopBlock: ${loop.isInLoopBlock})`
-          );
         }
       }
 
@@ -107,14 +99,20 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
         for (let col = 0; col < maxCols; col++) {
           const valueRange = dataLine.valueRanges[col];
           const colIndex = valueRange.columnIndex ?? col;
-          const tokenTypeIndex = 1 + (colIndex % 9); // same rule as header fields: rainbow2-rainbow10
+
+          let tokenTypeIndex: number;
+          if (loop.isInLoopBlock) {
+            tokenTypeIndex = 1 + (colIndex % 8); // same rule as header fields: rainbow2-rainbow9
+          } else {
+            // For single items, use the same color as the key (header)
+            // This ensures Key and Value are visually paired
+            tokenTypeIndex = 1 + (colorBaseIndex % 8);
+          }
           builder.push(dataLine.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
-          totalTokens += 1;
         }
       }
     }
 
-    this.debugLog(`Total tokens created: ${totalTokens}`);
     return builder.build();
   }
 
@@ -146,6 +144,8 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
       ) {
         quote = !quote;
         qtype = quote ? char : null;
+        output[olast][0] += char;
+        output[olast][1] = true; // Mark as quoted
       } else if (!quote && isWS && output[olast][0] !== "") {
         // Whitespace outside quotes - start new token
         output.push(["", false]);
@@ -156,7 +156,9 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
       } else if (!isWS || quote) {
         // Add character to current token
         output[olast][0] += char;
-        output[olast][1] = quote;
+        if (quote) {
+          output[olast][1] = true;
+        }
       }
     }
 
@@ -194,8 +196,7 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
     );
   }
 
-  parseLoops(document: vscode.TextDocument): LoopBlock[] {
-    this.debugLog("Starting parseLoops");
+  parseLoops(document: vscode.TextDocument, builder?: vscode.SemanticTokensBuilder): LoopBlock[] {
     const loops: LoopBlock[] = [];
     let currentLoop: LoopBlock | null = null;
     let multiLineMode = false;
@@ -210,7 +211,6 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
       if (firstChar === "#") {
         // If we're in a loop and have field names, end the loop
         if (currentLoop && currentLoop.fieldNames.length > 0 && currentLoop.namesDefined) {
-          this.debugLog(`Ending loop at line ${i + 1} (comment)`);
           loops.push(currentLoop);
           currentLoop = null;
         }
@@ -222,7 +222,25 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
         if (multiLineMode) {
           // End of multi-line string
           multiLineMode = false;
-          this.debugLog(`Ended multi-line string at line ${i + 1}`);
+          // Color the closing semicolon line
+          // Calculate column index for color cycling
+          let tokenTypeIndex = 2; // Default to rainbow3 (string)
+          if (currentLoop) {
+            const fieldCount = currentLoop.fieldNames.length || 1;
+
+            if (currentLoop.isInLoopBlock) {
+              const colIndex = currentLoop.processedValueCount % fieldCount;
+              tokenTypeIndex = 1 + (colIndex % 8); // rainbow2-rainbow9
+            } else {
+              tokenTypeIndex = 2; // Single item value is always rainbow3
+            }
+
+            // Increment value count because a multi-line string is one value
+            currentLoop.processedValueCount++;
+          }
+
+          if (builder) builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
+
           // Multi-line strings are data values, not column names
           if (currentLoop && currentLoop.fieldNames.length > 0) {
             currentLoop.namesDefined = true;
@@ -231,7 +249,20 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
         } else {
           // Start of multi-line string
           multiLineMode = true;
-          this.debugLog(`Started multi-line string at line ${i + 1}`);
+
+          // Color the opening semicolon line
+          let tokenTypeIndex = 2; // Default
+          if (currentLoop) {
+            const fieldCount = currentLoop.fieldNames.length || 1;
+            if (currentLoop.isInLoopBlock) {
+              const colIndex = currentLoop.processedValueCount % fieldCount;
+              tokenTypeIndex = 1 + (colIndex % 8);
+            } else {
+              tokenTypeIndex = 2;
+            }
+          }
+
+          if (builder) builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
           multiLineBuffer = [];
         }
         continue;
@@ -240,6 +271,18 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
       if (multiLineMode) {
         // We're inside a multi-line string, skip this line
         multiLineBuffer.push(lineText);
+        // Color the content line
+        if (builder && lineText.length > 0) {
+          let tokenTypeIndex = 2;
+          if (currentLoop) {
+            const fieldCount = currentLoop.fieldNames.length || 1;
+            if (currentLoop.isInLoopBlock) {
+              const colIndex = currentLoop.processedValueCount % fieldCount;
+              tokenTypeIndex = 1 + (colIndex % 8);
+            }
+          }
+          builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
+        }
         continue;
       }
 
@@ -248,7 +291,6 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
         // Empty line - if we have a loop with field names, mark names as defined
         if (currentLoop && currentLoop.fieldNames.length > 0 && !currentLoop.namesDefined) {
           currentLoop.namesDefined = true;
-          this.debugLog(`Marked names as defined at line ${i + 1} (empty line)`);
         }
         continue;
       }
@@ -262,7 +304,6 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
       if (this.isBlockKeyword(tokens[0])) {
         // End current loop if exists
         if (currentLoop && currentLoop.fieldNames.length > 0) {
-          this.debugLog(`Ending loop at line ${i + 1} (block keyword: ${tokens[0][0]})`);
           loops.push(currentLoop);
         }
         currentLoop = null;
@@ -273,7 +314,6 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
       if (this.isLoopKeyword(tokens[0])) {
         // End previous loop if exists
         if (currentLoop && currentLoop.fieldNames.length > 0) {
-          this.debugLog(`Ending previous loop at line ${i + 1}`);
           loops.push(currentLoop);
         }
         currentLoop = {
@@ -282,37 +322,33 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
           fieldNames: [],
           namesDefined: false,
           isInLoopBlock: true,
+          processedValueCount: 0,
           dataLines: []
         };
-        this.debugLog(`Started new loop at line ${i + 1}`);
         continue;
       }
 
       // Check if this is a data name (column header) - can be inside or outside a loop
       if (tokens.length > 0 && this.isDataName(tokens[0])) {
         const dataName = tokens[0][0];
-        const match = dataName.match(/^(_[A-Za-z0-9_]+)\.([A-Za-z0-9_]+)$/);
-        
+        const match = dataName.match(/^(_[A-Za-z0-9_]+)\.([A-Za-z0-9_\[\]]+)$/);
+
         if (match) {
           const categoryName = match[1];
           const fieldName = match[2];
-          
+
           // Find the position in the original line
-          const categoryMatch = lineText.match(/^(\s*)(_[A-Za-z0-9_]+)\.([A-Za-z0-9_]+)/);
+          const categoryMatch = lineText.match(/^(\s*)(_[A-Za-z0-9_]+)\.([A-Za-z0-9_\[\]]+)/);
           if (categoryMatch) {
             const leadingSpaces = categoryMatch[1]?.length || 0;
             const fieldStart = leadingSpaces + categoryName.length + 1; // +1 for the dot
             const fieldLength = fieldName.length;
 
             // Check if we need to close the previous loop
-            // Close if:
-            // 1. We have a current loop with names defined (single item or completed loop)
-            // 2. AND (it's a different category OR it's the same category but we already have a field)
             if (currentLoop && currentLoop.namesDefined && currentLoop.fieldNames.length > 0) {
-              if (currentLoop.categoryName !== categoryName || 
-                  (currentLoop.categoryName === categoryName && currentLoop.fieldNames.length === 1)) {
+              if (currentLoop.categoryName !== categoryName ||
+                (currentLoop.categoryName === categoryName && currentLoop.fieldNames.length === 1)) {
                 // Close the previous loop (different category, or same category with single item)
-                this.debugLog(`Ending loop at line ${i + 1} (new data name)`);
                 loops.push(currentLoop);
                 currentLoop = null;
               }
@@ -327,21 +363,19 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
                 fieldNames: [],
                 namesDefined: true, // Single items outside loop_ are immediately defined
                 isInLoopBlock: false,
+                processedValueCount: 0,
                 dataLines: []
               };
-              this.debugLog(`Started new loop (single item) at line ${i + 1}: ${categoryName}`);
             }
 
             if (!currentLoop.categoryName) {
               currentLoop.categoryName = categoryName;
-              this.debugLog(`  Category: ${categoryName}`);
             }
 
             // Check if this is a new category (different from current loop's category)
             if (currentLoop.categoryName !== categoryName) {
               // End current loop and start a new one
               if (currentLoop.fieldNames.length > 0) {
-                this.debugLog(`Ending loop at line ${i + 1} (new category)`);
                 loops.push(currentLoop);
               }
               currentLoop = {
@@ -350,9 +384,9 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
                 fieldNames: [],
                 namesDefined: currentLoop.isInLoopBlock ? false : true, // Preserve loop block status
                 isInLoopBlock: currentLoop.isInLoopBlock,
+                processedValueCount: 0,
                 dataLines: []
               };
-              this.debugLog(`Started new loop (category change) at line ${i + 1}: ${categoryName}`);
             }
 
             currentLoop.fieldNames.push({
@@ -361,13 +395,14 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
               length: fieldLength,
               fieldName: fieldName
             });
-            this.debugLog(`  Added field: ${fieldName} (line ${i + 1})`);
 
             // If values exist on the same line (single-item outside loop_), record them as data
             const valueRanges: Array<{ start: number; length: number; columnIndex: number }> = [];
             const headerCount = currentLoop.fieldNames.length;
             const maxCols = Math.min(headerCount, tokens.length - 1);
             let searchStart = categoryMatch.index! + categoryMatch[0].length;
+            const fieldCount = currentLoop.fieldNames.length;
+
             for (let col = 0; col < maxCols; col++) {
               const tokenText = tokens[col + 1][0];
               if (!tokenText) {
@@ -377,6 +412,7 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
               if (idx === -1) {
                 continue;
               }
+
               const columnIndex = headerCount - 1; // current field column index
               valueRanges.push({ start: idx, length: tokenText.length, columnIndex });
               searchStart = idx + tokenText.length;
@@ -386,7 +422,7 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
                 line: i,
                 valueRanges
               });
-              this.debugLog(`  Added inline data values at line ${i + 1} (${valueRanges.length} value(s))`);
+              currentLoop.processedValueCount += valueRanges.length;
             }
           }
         }
@@ -397,11 +433,10 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
           // Mark that column names are defined
           if (!currentLoop.namesDefined) {
             currentLoop.namesDefined = true;
-            this.debugLog(`Marked names as defined at line ${i + 1} (data line)`);
           }
 
           // Collect value ranges for this data line so we can color them later
-            const valueRanges: Array<{ start: number; length: number; columnIndex: number }> = [];
+          const valueRanges: Array<{ start: number; length: number; columnIndex: number }> = [];
           const headerCount = currentLoop.fieldNames.length;
           const maxCols = Math.min(headerCount, tokens.length);
           let searchStart = 0;
@@ -415,7 +450,13 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
             if (idx === -1) {
               continue;
             }
-              valueRanges.push({ start: idx, length: tokenText.length, columnIndex: col });
+
+            // Calculate column index based on total processed values
+            const fieldCount = currentLoop.fieldNames.length || 1;
+            const currentTotalCount = currentLoop.processedValueCount + col;
+            const effectiveColIndex = currentTotalCount % fieldCount;
+
+            valueRanges.push({ start: idx, length: tokenText.length, columnIndex: effectiveColIndex });
             searchStart = idx + tokenText.length;
           }
 
@@ -428,9 +469,7 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
               line: i,
               valueRanges
             });
-            this.debugLog(
-              `  Added data line at ${i + 1} with ${valueRanges.length} value(s)`
-            );
+            currentLoop.processedValueCount += valueRanges.length;
           }
         }
       }
@@ -438,30 +477,15 @@ class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
 
     // Add final loop if exists
     if (currentLoop && currentLoop.fieldNames.length > 0) {
-      this.debugLog(`Ending final loop`);
       loops.push(currentLoop);
     }
 
-    this.debugLog(`parseLoops completed: ${loops.length} loop(s) found`);
     return loops;
   }
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  // Create output channel for debugging
-  debugOutputChannel = vscode.window.createOutputChannel("mmCIF Rainbow Debug");
-  context.subscriptions.push(debugOutputChannel);
-
-  // Create status bar item
-  statusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Right,
-    100
-  );
-  statusBarItem.command = "mmcif-rainbow.showDebugInfo";
-  statusBarItem.tooltip = "Show mmCIF Rainbow debug information";
-  context.subscriptions.push(statusBarItem);
-
-  const provider = new MmCifTokenProvider(debugOutputChannel);
+  const provider = new MmCifTokenProvider();
   const selector: vscode.DocumentSelector = {
     language: "mmcif",
     scheme: "file"
@@ -474,182 +498,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(disposable);
-
-  // Register debug command
-  const debugCommand = vscode.commands.registerCommand(
-    "mmcif-rainbow.showDebugInfo",
-    () => {
-      if (debugOutputChannel) {
-        debugOutputChannel.show();
-      }
-    }
-  );
-  context.subscriptions.push(debugCommand);
-
-  // Register command to show parse results
-  const parseCommand = vscode.commands.registerCommand(
-    "mmcif-rainbow.debugParse",
-    async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor || editor.document.languageId !== "mmcif") {
-        vscode.window.showWarningMessage("Please open an mmCIF file first");
-        return;
-      }
-
-      const provider = new MmCifTokenProvider(debugOutputChannel || undefined);
-      const loops = provider.parseLoops(editor.document);
-      
-      if (debugOutputChannel) {
-        debugOutputChannel.clear();
-        debugOutputChannel.appendLine("=== mmCIF Parse Results ===");
-        debugOutputChannel.appendLine(`File: ${editor.document.fileName}`);
-        debugOutputChannel.appendLine(`Total loops: ${loops.length}\n`);
-
-        loops.forEach((loop: LoopBlock, index: number) => {
-          debugOutputChannel!.appendLine(`Loop ${index + 1}:`);
-          debugOutputChannel!.appendLine(`  Start line: ${loop.startLine + 1}`);
-          debugOutputChannel!.appendLine(`  Category: ${loop.categoryName}`);
-          debugOutputChannel!.appendLine(`  Fields: ${loop.fieldNames.length}`);
-          debugOutputChannel!.appendLine(`  Names defined: ${loop.namesDefined}`);
-          loop.fieldNames.forEach((field, fieldIndex) => {
-            debugOutputChannel!.appendLine(
-              `    ${fieldIndex + 1}. ${field.fieldName} (line ${field.line + 1}, start: ${field.start}, length: ${field.length})`
-            );
-          });
-          debugOutputChannel!.appendLine("");
-        });
-
-        debugOutputChannel.show();
-      }
-    }
-  );
-  context.subscriptions.push(parseCommand);
-
-  // Register command to debug token colors at cursor position
-  const debugColorCommand = vscode.commands.registerCommand(
-    "mmcif-rainbow.debugColor",
-    async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor || editor.document.languageId !== "mmcif") {
-        vscode.window.showWarningMessage("Please open an mmCIF file first");
-        return;
-      }
-
-      const position = editor.selection.active;
-      const document = editor.document;
-      
-      if (debugOutputChannel) {
-        debugOutputChannel.clear();
-        debugOutputChannel.appendLine("=== Token Color Debug ===");
-        debugOutputChannel.appendLine(`Position: Line ${position.line + 1}, Column ${position.character + 1}`);
-        debugOutputChannel.appendLine(`Character: "${document.getText(new vscode.Range(position, position.translate(0, 1)))}"`);
-        debugOutputChannel.appendLine("");
-
-        // Get semantic tokens
-        const provider = new MmCifTokenProvider();
-        const semanticTokens = await provider.provideDocumentSemanticTokens(document);
-        
-        if (semanticTokens) {
-          debugOutputChannel.appendLine("=== Semantic Tokens ===");
-          const data = semanticTokens.data;
-          let currentLine = 0;
-          let currentChar = 0;
-          
-          for (let i = 0; i < data.length; i += 5) {
-            const deltaLine = data[i];
-            const deltaChar = data[i + 1];
-            const length = data[i + 2];
-            const tokenType = data[i + 3];
-            const tokenModifiers = data[i + 4];
-            
-            currentLine += deltaLine;
-            if (deltaLine === 0) {
-              currentChar += deltaChar;
-            } else {
-              currentChar = deltaChar;
-            }
-            
-            const tokenStart = new vscode.Position(currentLine, currentChar);
-            const tokenEnd = new vscode.Position(currentLine, currentChar + length);
-            const tokenRange = new vscode.Range(tokenStart, tokenEnd);
-            
-            if (tokenRange.contains(position)) {
-              const tokenText = document.getText(tokenRange);
-              const tokenTypeName = rainbowTokenTypes[tokenType] || `unknown(${tokenType})`;
-              
-              debugOutputChannel.appendLine(`Token found at cursor:`);
-              debugOutputChannel.appendLine(`  Text: "${tokenText}"`);
-              debugOutputChannel.appendLine(`  Type: ${tokenTypeName}`);
-              debugOutputChannel.appendLine(`  Type Index: ${tokenType}`);
-              debugOutputChannel.appendLine(`  Range: Line ${currentLine + 1}, Col ${currentChar + 1}-${currentChar + length + 1}`);
-              debugOutputChannel.appendLine(`  Modifiers: ${tokenModifiers}`);
-              
-              // Check configuration
-              const config = vscode.workspace.getConfiguration("editor", {
-                languageId: "mmcif"
-              });
-              const semanticHighlighting = config.get<boolean>("semanticHighlighting.enabled");
-              debugOutputChannel.appendLine(`  Semantic Highlighting Enabled: ${semanticHighlighting}`);
-              
-              const colorCustomizations = config.get<any>("semanticTokenColorCustomizations");
-              if (colorCustomizations && colorCustomizations.rules) {
-                const rule = colorCustomizations.rules[tokenTypeName];
-                if (rule) {
-                  debugOutputChannel.appendLine(`  Color Rule: ${JSON.stringify(rule)}`);
-                } else {
-                  debugOutputChannel.appendLine(`  Color Rule: NOT FOUND for ${tokenTypeName}`);
-                }
-              }
-            }
-          }
-        }
-
-        // Check TextMate scopes (use `any` because this is an internal/dev command)
-        debugOutputChannel.appendLine("");
-        debugOutputChannel.appendLine("=== TextMate Scopes ===");
-        const textMateScopes = await vscode.commands.executeCommand<any>(
-          "vscode.executeTextMateScopes",
-          document.uri,
-          position
-        );
-        if (textMateScopes && Array.isArray(textMateScopes.scopes)) {
-          debugOutputChannel.appendLine(`Scopes: ${textMateScopes.scopes.join(", ")}`);
-        }
-
-        debugOutputChannel.show();
-      }
-    }
-  );
-  context.subscriptions.push(debugColorCommand);
-
-  // Update status bar when document changes
-  const updateStatusBar = () => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor && editor.document.languageId === "mmcif" && statusBarItem) {
-      const provider = new MmCifTokenProvider();
-      const loops = provider.parseLoops(editor.document);
-      statusBarItem.text = `$(symbol-class) ${loops.length} loop(s)`;
-      statusBarItem.show();
-    } else if (statusBarItem) {
-      statusBarItem.hide();
-    }
-  };
-
-  vscode.window.onDidChangeActiveTextEditor(updateStatusBar);
-  vscode.workspace.onDidChangeTextDocument((e) => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor && e.document === editor.document) {
-      updateStatusBar();
-    }
-  });
-  updateStatusBar();
 }
 
-export function deactivate() {
-  if (debugOutputChannel) {
-    debugOutputChannel.dispose();
-  }
-  if (statusBarItem) {
-    statusBarItem.dispose();
-  }
-}
+export function deactivate() { }
