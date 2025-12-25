@@ -7,3 +7,4 @@ node_modules/
 .DS_Store
 *.cif
 !examples/*.cif
+examples/7y7a.cif

@@ -20,6 +20,9 @@ export const tokensLegend = new vscode.SemanticTokensLegend(
     []
 );
 
+const LARGE_FILE_LIMIT = 2 * 1024 * 1024; // 2MB
+const warnedFiles = new Set<string>();
+
 export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
     private parser: CifParser;
 
@@ -30,6 +33,15 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
     provideDocumentSemanticTokens(
         document: vscode.TextDocument
     ): vscode.ProviderResult<vscode.SemanticTokens> {
+        // Check for large file size
+        if (document.getText().length > LARGE_FILE_LIMIT) {
+            if (!warnedFiles.has(document.uri.toString())) {
+                vscode.window.showWarningMessage(`Rainbow mmCIF: File is too large (>2MB). Highlighting disabled for performance.`);
+                warnedFiles.add(document.uri.toString());
+            }
+            return null;
+        }
+
         const builder = new vscode.SemanticTokensBuilder(tokensLegend);
         const loops = this.parser.parseLoops(document, builder);
 
