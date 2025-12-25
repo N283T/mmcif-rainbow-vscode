@@ -1,6 +1,9 @@
-.vscode
+out/
+dist/
+node_modules/
+.vscode/
+.vscode-test/
+*.vsix
 .DS_Store
-.env
-cif-parsers/*
-2hhb.cif
-vscode_rainbow_csv/*
+*.cif
+!examples/*.cif
