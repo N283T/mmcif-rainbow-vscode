@@ -2,7 +2,7 @@
 
 This extension provides enhanced syntax highlighting and visual aids for **mmCIF** (Macromolecular Crystallographic Information File) files, widely used in structural biology.
 
-It is designed to make reading and editing complex `loop_` blocks easier.
+It is designed to make reading and editing complex `loop_` blocks easier. Unlike existing CIF editors or syntax highlighters, this extension focuses on human-readable visualization of mmCIF loop columns, inspired by Rainbow CSV.
 
 ## Features
 
