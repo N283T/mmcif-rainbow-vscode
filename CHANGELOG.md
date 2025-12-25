@@ -2,6 +2,10 @@
 
 All notable changes to the "mmcif-rainbow" extension will be documented in this file.
 
+## [0.0.4] - 2025-12-25
+### Changed
+- **Documentation Updated**: Added clarification about VS Code's 50MB file size limit for extensions.
+
 ## [0.0.3] - 2025-12-25
 ### Changed
 - Added file size limit (2MB) to prevent performance issues with large CIF files. A warning will be shown if a file exceeds this limit.
