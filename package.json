@@ -2,6 +2,7 @@
   "name": "mmcif-rainbow",
   "displayName": "Rainbow mmCIF",
   "version": "0.0.4",
+  "publisher": "N283T",
   "license": "MIT",
   "repository": {
     "type": "git",
