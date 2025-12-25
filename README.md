@@ -2,14 +2,17 @@
 
 This extension provides enhanced syntax highlighting and visual aids for **mmCIF** (Macromolecular Crystallographic Information File) files, widely used in structural biology.
 
-It is designed to make reading and editing complex `loop_` blocks easier. Unlike existing CIF editors or syntax highlighters, this extension focuses on human-readable visualization of mmCIF loop columns, inspired by Rainbow CSV.
+It is designed to make reading and editing complex `loop_` blocks easier. Unlike existing CIF editors or syntax highlighters, this extension focuses on human-readable visualization of mmCIF loop columns, inspired by [Rainbow CSV](https://github.com/mechatroner/vscode_rainbow_csv).
 
+![Feature Demo](resources/rainbow_mmcif_anime.gif)
 ## Features
 
 ### 🌈 Rainbow Column Highlighting
 Columns in `loop_` blocks are automatically colored to visually distinguish them.
 - Each column (field name and its corresponding values) gets a unique color from a cycling rainbow palette.
 - Helps quickly align keys with their values in large tables.
+
+![Rainbow Highlighting](resources/rainbow_mmcif_scshot_view.png)
 
 ### 🔦 Cursor Column Highlighting
 When you place your cursor on a field name or a data value:
@@ -20,6 +23,8 @@ When you place your cursor on a field name or a data value:
 ### ℹ️ Hover Information
 Hover over any data value in a loop to see its corresponding **Tag Name** (e.g., `_atom_site.id`).
 - No more scrolling up to the header to check which field you are looking at!
+
+![Hover Info](resources/mmcif_rainbow_scshot_hover.png)
 
 ## Installation
 

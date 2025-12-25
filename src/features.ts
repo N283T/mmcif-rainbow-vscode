@@ -38,10 +38,12 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
         // Trigger update for highlighter since we have fresh loops
         CursorHighlighter.update(vscode.window.activeTextEditor);
 
+        // State for tracking single items (non-loop) to cycle colors per category
+        let categoryItemCount = 0;
+        let lastCategory = "";
+
         for (const loop of loops) {
             // Determine color index base for this loop/item
-            let categoryItemCount = 0;
-            let lastCategory = "";
             let colorBaseIndex = 0;
 
             if (loop.isInLoopBlock) {
