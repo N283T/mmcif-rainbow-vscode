@@ -8,3 +8,4 @@ node_modules/
 *.cif
 !examples/*.cif
 examples/7y7a.cif
+examples/7ZTS.cif
