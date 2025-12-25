@@ -1,10 +1,9 @@
-dist/**
-node_modules/**
 .vscode/**
+.vscode-test/**
 src/**
+.gitignore
 tsconfig.json
-language-configuration.json
-syntaxes/**
 **/*.map
+.DS_Store
 
 
