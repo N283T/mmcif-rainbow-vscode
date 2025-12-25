@@ -1,9 +1,7 @@
 {
   "name": "mmcif-rainbow",
   "displayName": "Rainbow mmCIF",
-  "description": "Column-based coloring for mmCIF loops.",
-  "version": "0.0.3",
-  "publisher": "N283T",
+  "version": "0.0.4",
   "license": "MIT",
   "repository": {
     "type": "git",

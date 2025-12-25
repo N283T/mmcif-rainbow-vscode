@@ -3,9 +3,7 @@
 .gitignore
 .github/
 src/
-gemmi/
 examples/
-temp_gemmi_check/
 node_modules/
 extension-test/
 tsconfig.json

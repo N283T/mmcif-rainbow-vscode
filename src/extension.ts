@@ -1,11 +1,7 @@
 import * as vscode from "vscode";
 import { MmCifTokenProvider, MmCifHoverProvider, CursorHighlighter, tokensLegend } from "./features";
-import { loadWasmModule } from "./wasmParser";
 
 export function activate(context: vscode.ExtensionContext) {
-  // Load WASM module
-  loadWasmModule(context).catch(err => console.error('MMCIF: Failed to load WASM in activate', err));
-
   const provider = new MmCifTokenProvider();
   const selector: vscode.DocumentSelector = {
     language: "mmcif",
@@ -14,14 +10,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.languages.registerDocumentSemanticTokensProvider(
-      selector,
-      provider,
-      tokensLegend
-    )
-  );
-
-  context.subscriptions.push(
-    vscode.languages.registerDocumentRangeSemanticTokensProvider(
       selector,
       provider,
       tokensLegend
