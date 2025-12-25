@@ -29,98 +29,93 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
     async provideDocumentSemanticTokens(
         document: vscode.TextDocument
     ): Promise<vscode.SemanticTokens> {
-        return vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: "Highlighting mmCIF (TS)...",
-            cancellable: false
-        }, async (progress) => {
-            const builder = new vscode.SemanticTokensBuilder(tokensLegend);
+        const builder = new vscode.SemanticTokensBuilder(tokensLegend);
 
-            // Allow UI to update before blocking
-            await new Promise(resolve => setTimeout(resolve, 0));
+        // Allow UI to update before blocking
+        await new Promise(resolve => setTimeout(resolve, 0));
 
-            const loops = this.parser.parseLoops(document, builder);
+        const loops = this.parser.parseLoops(document, builder);
 
-            // Cache the loops for other features (highlighter, hover)
-            LoopCache.set(document.uri, document.version, loops);
-            // Trigger update for highlighter since we have fresh loops
-            CursorHighlighter.update(vscode.window.activeTextEditor);
+        // Cache the loops for other features (highlighter, hover)
+        LoopCache.set(document.uri, document.version, loops);
+        // Trigger update for highlighter since we have fresh loops
+        CursorHighlighter.update(vscode.window.activeTextEditor);
 
-            // State for tracking single items (non-loop) to cycle colors per category
-            let categoryItemCount = 0;
-            let lastCategory = "";
+        // State for tracking single items (non-loop) to cycle colors per category
+        let categoryItemCount = 0;
+        let lastCategory = "";
 
-            for (const loop of loops) {
-                // Determine color index base for this loop/item
-                let colorBaseIndex = 0;
+        for (const loop of loops) {
+            // Determine color index base for this loop/item
+            let colorBaseIndex = 0;
 
-                if (loop.isInLoopBlock) {
-                    // Loop blocks handle their own internal rotation
-                    lastCategory = ""; // Reset category tracking when hitting a loop block
+            if (loop.isInLoopBlock) {
+                // Loop blocks handle their own internal rotation
+                lastCategory = ""; // Reset category tracking when hitting a loop block
+            } else {
+                // Single Item
+                if (loop.categoryName !== lastCategory) {
+                    categoryItemCount = 0;
+                    lastCategory = loop.categoryName;
                 } else {
-                    // Single Item
-                    if (loop.categoryName !== lastCategory) {
-                        categoryItemCount = 0;
-                        lastCategory = loop.categoryName;
+                    categoryItemCount++;
+                }
+                colorBaseIndex = categoryItemCount;
+            }
+
+            // Color each field name line
+            for (let fieldIndex = 0; fieldIndex < loop.fieldNames.length; fieldIndex++) {
+                const field = loop.fieldNames[fieldIndex];
+                const lineText = document.lineAt(field.line).text;
+                const match = lineText.match(/^(\s*)(_[A-Za-z0-9_]+)\.([A-Za-z0-9_\[\]]+)(\s|$)/);
+
+                if (match) {
+                    const leadingSpaces = match[1]?.length || 0;
+                    const categoryName = match[2];
+                    const fieldName = match[3];
+
+                    // Color category name (rainbow1) - includes the dot
+                    const categoryStart = leadingSpaces;
+                    const categoryLength = categoryName.length + 1; // +1 for the dot
+                    builder.push(field.line, categoryStart, categoryLength, 0, 0); // rainbow1
+
+                    // Color field name (rainbow2-rainbow10, cycling)
+                    const fieldStart = leadingSpaces + categoryName.length + 1; // +1 for the dot
+                    const fieldLength = fieldName.length;
+
+                    let tokenTypeIndex: number;
+                    if (loop.isInLoopBlock) {
+                        // Inside loop_ block: use field index within the loop
+                        tokenTypeIndex = 1 + (fieldIndex % 8); // rainbow2-rainbow9
                     } else {
-                        categoryItemCount++;
+                        // Outside loop_ block: use the category counter
+                        tokenTypeIndex = 1 + (colorBaseIndex % 8);
                     }
-                    colorBaseIndex = categoryItemCount;
-                }
 
-                // Color each field name line
-                for (let fieldIndex = 0; fieldIndex < loop.fieldNames.length; fieldIndex++) {
-                    const field = loop.fieldNames[fieldIndex];
-                    const lineText = document.lineAt(field.line).text;
-                    const match = lineText.match(/^(\s*)(_[A-Za-z0-9_]+)\.([A-Za-z0-9_\[\]]+)(\s|$)/);
-
-                    if (match) {
-                        const leadingSpaces = match[1]?.length || 0;
-                        const categoryName = match[2];
-                        const fieldName = match[3];
-
-                        // Color category name (rainbow1) - includes the dot
-                        const categoryStart = leadingSpaces;
-                        const categoryLength = categoryName.length + 1; // +1 for the dot
-                        builder.push(field.line, categoryStart, categoryLength, 0, 0); // rainbow1
-
-                        // Color field name (rainbow2-rainbow10, cycling)
-                        const fieldStart = leadingSpaces + categoryName.length + 1; // +1 for the dot
-                        const fieldLength = fieldName.length;
-
-                        let tokenTypeIndex: number;
-                        if (loop.isInLoopBlock) {
-                            // Inside loop_ block: use field index within the loop
-                            tokenTypeIndex = 1 + (fieldIndex % 8); // rainbow2-rainbow9
-                        } else {
-                            // Outside loop_ block: use the category counter
-                            tokenTypeIndex = 1 + (colorBaseIndex % 8);
-                        }
-
-                        builder.push(field.line, fieldStart, fieldLength, tokenTypeIndex, 0);
-                    }
-                }
-
-                // Color data lines: values in each column get the same color as the corresponding header field
-                for (const dataLine of loop.dataLines || []) {
-                    const maxCols = Math.min(loop.fieldNames.length, dataLine.valueRanges.length);
-                    for (let col = 0; col < maxCols; col++) {
-                        const valueRange = dataLine.valueRanges[col];
-                        const colIndex = valueRange.columnIndex ?? col;
-
-                        let tokenTypeIndex: number;
-                        if (loop.isInLoopBlock) {
-                            tokenTypeIndex = 1 + (colIndex % 8); // same rule as header fields: rainbow2-rainbow9
-                        } else {
-                            tokenTypeIndex = 1 + (colorBaseIndex % 8);
-                        }
-                        builder.push(dataLine.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
-                    }
+                    builder.push(field.line, fieldStart, fieldLength, tokenTypeIndex, 0);
                 }
             }
 
-            return builder.build();
-        });
+            // Color data lines: values in each column get the same color as the corresponding header field
+            for (const dataLine of loop.dataLines || []) {
+                const maxCols = Math.min(loop.fieldNames.length, dataLine.valueRanges.length);
+                for (let col = 0; col < maxCols; col++) {
+                    const valueRange = dataLine.valueRanges[col];
+                    const colIndex = valueRange.columnIndex ?? col;
+
+                    let tokenTypeIndex: number;
+                    if (loop.isInLoopBlock) {
+                        tokenTypeIndex = 1 + (colIndex % 8); // same rule as header fields: rainbow2-rainbow9
+                    } else {
+                        tokenTypeIndex = 1 + (colorBaseIndex % 8);
+                    }
+                    builder.push(dataLine.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
+                }
+            }
+        }
+
+        return builder.build();
+
     }
 }
 

@@ -54,11 +54,11 @@ The extension uses Semantic Highlighting. You can customize the colors by adding
 
 ## Limitations
 
-- **File Size Limit**: To ensure smooth performance, files larger than **2MB** will skip the rainbow coloring and hover features. A warning notification will be displayed. This prevents the extension from freezing VS Code on extremely heavy structure files.
+- **File Size Limit**: Due to VS Code's internal API limitations, extensions cannot access the content of files larger than approximately **50MB**. Therefore, rainbow coloring and hover features will not be available for these massive files. This is a platform restriction that cannot be bypassed by standard extensions.
 
 ## Future Roadmap
 
-- [ ] **Large File Support**: Implement asynchronous parsing (Web Workers) to support huge mmCIF files without performance impact.
+- [ ] **Massive File Viewer**: We are considering developing a dedicated Custom Document Viewer to handle massive mmCIF files (>50MB) that exceed VS Code's standard text editor limits.
 - [ ] **Enhanced Hover**: Display detailed dictionary definitions/descriptions for each tag, not just the name.
 
 ## Contributing
