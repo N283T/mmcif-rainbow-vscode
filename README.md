@@ -1,36 +1,90 @@
-# mmCIF Rainbow Columns (VS Code Extension)
+# Rainbow mmCIF (VS Code Extension)
 
-This extension provides enhanced syntax highlighting and visual aids for **mmCIF** (Macromolecular Crystallographic Information File) files, widely used in structural biology.
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue?logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=N283T.mmcif-rainbow)
 
-It is designed to make reading and editing complex `loop_` blocks easier. Unlike existing CIF editors or syntax highlighters, this extension focuses on human-readable visualization of mmCIF loop columns, inspired by [Rainbow CSV](https://github.com/mechatroner/vscode_rainbow_csv).
+![Rainbow Overview](resources/overview.png)
 
-![Feature Demo](resources/rainbow_mmcif_anime.gif)
+This extension provides enhanced syntax highlighting and visual aids for **mmCIF** (Macromolecular Crystallographic Information File) files, widely used in structural biology. 
+
+It is designed to make reading and editing complex mmCIF files effortless. Unlike standard syntax highlighters, this extension focuses on human-readable visualization of data blocks, inspired by [Rainbow CSV](https://github.com/mechatroner/vscode_rainbow_csv).
+
 ## Features
 
-### 🌈 Rainbow Column Highlighting
-Columns in `loop_` blocks are automatically colored to visually distinguish them.
-- Each column (field name and its corresponding values) gets a unique color from a cycling rainbow palette.
-- Helps quickly align keys with their values in large tables.
+### 🌈 Rainbow Block Highlighting
 
-![Rainbow Highlighting](resources/rainbow_mmcif_scshot_view.png)
+![Rainbow Demo](resources/rainbow_mmcif_movie_01.gif)
 
-### 🔦 Cursor Column Highlighting
-When you place your cursor on a field name or a data value:
-- The **entire column** is highlighted (including the header and all data rows).
-- This makes it easy to track which column a value belongs to or find all values for a specific field.
-- Supports standard values and multi-line (`;...;`) strings.
+All data items—whether in a `loop_` or a single-item section—are treated as a unified **Block**.
+- **Category** (e.g., `_atom_site`) and **Item** (e.g., `.id`) are clearly distinguished.
+- Columns are automatically colored using a cycling rainbow palette to help you quickly align keys with their values.
 
-### ℹ️ Enhanced Dictionary Hover
-Hover over any data value, attribute name, or category to see its **official definition**.
-- **Context-Aware**: Shows descriptions for Categories (e.g., `_atom_site`) and Items (e.g., `id`).
-- **Dictionary Data**: Fetches descriptions directly from the `mmcif_pdbx_v50` dictionary.
-- **Online Links**: Provides direct links to the wwPDB online documentation for further reading.
+![Atomsite Overview](resources/overview_atomsite.png)
 
-![Hover Info](resources/mmcif_rainbow_scshot_hover.png)
+---
+
+### ℹ️ Integrated Dictionary Hover
+
+![Hover Demo](resources/rainbow_mmcif_movie_02.gif)
+
+Gain instant access to the official PDBx/mmCIF dictionary metadata. Hover over any Category, Item, or data value to see its definition.
+- **Context-Aware**: Dynamically displays documentation based on whether you hover over a **Category**, **Item**, or **Value**.
+- **Direct Links**: Quick navigation to official wwPDB documentation for every tag.
+
+#### Hover Format Examples
+
+**For Category:**
+
+![Hover Category](resources/hover_category.png)
+
+```
+### _category_name
+[Online Documentation](...)
+
+---
+Category Description...
+```
+
+**For Item:**
+
+![Hover Item](resources/hover_item.png)
+
+```
+### _category_name.item_name
+[Online Documentation](...)
+
+---
+Category : category_name
+Attribute : attribute_name
+
+---
+Item Description...
+```
+
+**For Value:**
+
+![Hover Value](resources/hover_value.png)
+
+```
+### _category_name.item_name
+```
+
+---
+
+### 🔦 Interactive Highlighting
+
+![Interactive Demo](resources/rainbow_mmcif_movie_03.gif)
+
+Highlight an entire column by placing your cursor on any part of it. This tracking makes it impossible to lose your place in dense data tables.
+
+![Column Focus 1](resources/highlight_01.png)
+
+![Column Focus 2](resources/highlight_02.png)
+
+---
 
 ## Installation
 
-1. Install via the VS Code Marketplace (search for "mmCIF Rainbow").
+1. **[Install from VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=N283T.mmcif-rainbow)**
 2. Open any `.cif` or `.mmcif` file. Highlighting and hover features will activate automatically.
 3. Or build from source:
    ```bash
@@ -38,30 +92,14 @@ Hover over any data value, attribute name, or category to see its **official def
    npm run compile
    ```
 
-## Configuration
-
-The extension uses Semantic Highlighting. You can customize the colors by adding the following to your VS Code `settings.json`:
-
-```json
-"editor.semanticTokenColorCustomizations": {
-    "rules": {
-        "rainbow1": "#ff0000",
-        "rainbow2": "#ff7f00",
-        // ... up to rainbow10
-    }
-}
-```
-
 ## Limitations
 
-- **File Size Limit**: Due to VS Code's internal API limitations, extensions cannot access the content of files larger than approximately **50MB**. Therefore, rainbow coloring and hover features will not be available for these massive files. This is a platform restriction that cannot be bypassed by standard extensions.
+- **File Size Limit**: Due to VS Code's internal API limitations, extensions cannot access the content of files larger than approximately **50MB**. For these massive files, rainbow coloring and hover features will be disabled.
 
 ## Future Roadmap
 
-- [ ] **Massive File Viewer**: We are considering developing a dedicated Custom Document Viewer to handle massive mmCIF files (>50MB) that exceed VS Code's standard text editor limits.
+- [ ] **Massive File Viewer**: We are exploring a dedicated Custom Document Viewer to handle massive mmCIF files (>50MB).
 
 ## Contributing
 
 Issues and Pull Requests are welcome!
-
-
