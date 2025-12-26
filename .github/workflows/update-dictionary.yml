@@ -30,9 +30,18 @@ jobs:
           commit-message: "Update dictionary (mmcif_pdbx_v50.dic.json)"
           title: "Update Dictionary to Latest Version"
           body: |
+<<<<<<< HEAD
             This PR updates the mmCIF dictionary JSON to the latest version from wwPDB.
           branch: update-dictionary-auto
           base: main
           delete-branch: true
           add-paths: |
             assets/mmcif_pdbx_v50.dic.json
+=======
+            This PR updates the mmCIF dictionary JSON to the latest version from [wwPDB](https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz).
+            
+            **Please verify the changes and merge to include in the next release.**
+          branch: update-dictionary-auto
+          base: main
+          delete-branch: true
+>>>>>>> cd40f0063f5e9ca9dfd79531dc1543ddd8465d20
