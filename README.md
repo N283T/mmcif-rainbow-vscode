@@ -20,18 +20,18 @@ When you place your cursor on a field name or a data value:
 - This makes it easy to track which column a value belongs to or find all values for a specific field.
 - Supports standard values and multi-line (`;...;`) strings.
 
-### ℹ️ Hover Information
-Hover over any data value in a loop to see its corresponding **Tag Name** (e.g., `_atom_site.id`).
-- No more scrolling up to the header to check which field you are looking at!
+### ℹ️ Enhanced Dictionary Hover
+Hover over any data value, attribute name, or category to see its **official definition**.
+- **Context-Aware**: Shows descriptions for Categories (e.g., `_atom_site`) and Items (e.g., `id`).
+- **Dictionary Data**: Fetches descriptions directly from the `mmcif_pdbx_v50` dictionary.
+- **Online Links**: Provides direct links to the wwPDB online documentation for further reading.
 
 ![Hover Info](resources/mmcif_rainbow_scshot_hover.png)
 
 ## Installation
 
 1. Install via the VS Code Marketplace (search for "mmCIF Rainbow").
-2. In the new window, open a file (e.g. `examples/2hhb.cif`) and run the command:
-
-   - **Command Palette** → `mmCIF Rainbow: Hello World`
+2. Open any `.cif` or `.mmcif` file. Highlighting and hover features will activate automatically.
 3. Or build from source:
    ```bash
    npm install
@@ -59,7 +59,6 @@ The extension uses Semantic Highlighting. You can customize the colors by adding
 ## Future Roadmap
 
 - [ ] **Massive File Viewer**: We are considering developing a dedicated Custom Document Viewer to handle massive mmCIF files (>50MB) that exceed VS Code's standard text editor limits.
-- [ ] **Enhanced Hover**: Display detailed dictionary definitions/descriptions for each tag, not just the name.
 
 ## Contributing
 
