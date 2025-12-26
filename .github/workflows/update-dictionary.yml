@@ -1,10 +1,8 @@
-
 name: Update Dictionary
 
 on:
   schedule:
-    # Run monthly on the 1st at 00:00
-    - cron: '0 0 1 * *'
+    - cron: '0 0 1 * *'  # UTC。JSTだと毎月1日 09:00
   workflow_dispatch:
 
 jobs:
@@ -12,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -31,9 +30,9 @@ jobs:
           commit-message: "Update dictionary (mmcif_pdbx_v50.dic.json)"
           title: "Update Dictionary to Latest Version"
           body: |
-            This PR updates the mmCIF dictionary JSON to the latest version from [wwPDB](https://mmcif.wwpdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic.gz).
-            
-            **Please verify the changes and merge to include in the next release.**
+            This PR updates the mmCIF dictionary JSON to the latest version from wwPDB.
           branch: update-dictionary-auto
           base: main
           delete-branch: true
+          add-paths: |
+            assets/mmcif_pdbx_v50.dic.json
