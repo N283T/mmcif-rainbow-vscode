@@ -96,10 +96,6 @@ Highlight an entire column by placing your cursor on any part of it. This tracki
 
 - **File Size Limit**: Due to VS Code's internal API limitations, extensions cannot access the content of files larger than approximately **50MB**. For these massive files, rainbow coloring and hover features will be disabled.
 
-## Future Roadmap
-
-- [ ] **Massive File Viewer**: We are exploring a dedicated Custom Document Viewer to handle massive mmCIF files (>50MB).
-
 ## Contributing
 
 Issues and Pull Requests are welcome!
