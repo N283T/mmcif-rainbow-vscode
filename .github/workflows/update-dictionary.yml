@@ -1,0 +1,39 @@
+
+name: Update Dictionary
+
+on:
+  schedule:
+    # Run monthly on the 1st at 00:00
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+jobs:
+  update-dictionary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "scripts/*.py"
+
+      - name: Generate Dictionary JSON
+        run: uv run scripts/build_dictionary.py
+
+      - name: Commit changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add assets/mmcif_pdbx_v50.dic.json
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to dictionary."
+          else
+            git commit -m "Update dictionary (mmcif_pdbx_v50.dic.json)"
+            git push
+          fi

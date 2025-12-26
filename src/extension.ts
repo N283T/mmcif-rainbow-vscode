@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { MmCifTokenProvider, MmCifHoverProvider, CursorHighlighter, tokensLegend } from "./features";
+import { DictionaryManager } from "./dictionary";
 
 export function activate(context: vscode.ExtensionContext) {
   const provider = new MmCifTokenProvider();
@@ -7,6 +8,11 @@ export function activate(context: vscode.ExtensionContext) {
     language: "mmcif",
     scheme: "file"
   };
+
+  // Initialize Dictionary Manager
+  const dictManager = DictionaryManager.getInstance();
+  // Load dictionary proactively (non-blocking) from extension path
+  dictManager.loadDictionary(context.extensionUri);
 
   context.subscriptions.push(
     vscode.languages.registerDocumentSemanticTokensProvider(
@@ -17,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.languages.registerHoverProvider(selector, new MmCifHoverProvider())
+    vscode.languages.registerHoverProvider(selector, new MmCifHoverProvider(dictManager))
   );
 
   // Register cursor change listener
