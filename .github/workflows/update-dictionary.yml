@@ -2,7 +2,7 @@ name: Update Dictionary
 
 on:
   schedule:
-    - cron: '0 0 1 * *'  # UTC。JSTだと毎月1日 09:00
+    - cron: "0 0 1 * *"
   workflow_dispatch:
 
 jobs:
@@ -29,10 +29,8 @@ jobs:
         with:
           commit-message: "Update dictionary (mmcif_pdbx_v50.dic.json)"
           title: "Update Dictionary to Latest Version"
-          body: |
-            This PR updates the mmCIF dictionary JSON to the latest version from wwPDB.
-            Please verify the changes and merge to include in the next release.
-          branch: update-dictionary-auto
-          base: main
+          body: "This PR updates the mmCIF dictionary JSON to the latest version from wwPDB. Please verify and merge."
+          branch: "update-dictionary-auto"
+          base: "main"
           delete-branch: true
-          add-paths: assets/mmcif_pdbx_v50.dic.json
+          add-paths: "assets/mmcif_pdbx_v50.dic.json"
