@@ -82,6 +82,33 @@ Highlight an entire column by placing your cursor on any part of it. This tracki
 
 ---
 
+### 🧬 AlphaFold / ModelCIF Support
+
+![pLDDT Coloring](resources/plddt.png)
+
+This extension provides specialized support for **AlphaFold** and other structure prediction model files that use the **ModelCIF** dictionary (`mmcif_ma.dic`).
+
+#### Automatic Dictionary Detection
+
+The extension automatically detects the dictionary type by reading `_audit_conform.dict_name`:
+- **PDBx/mmCIF** (`mmcif_pdbx_v50.dic`) - Standard experimental structures
+- **ModelCIF** (`mmcif_ma.dic`) - AlphaFold, ESMFold, and other predicted structures
+
+#### pLDDT Confidence Coloring
+
+For ModelCIF files, the `B_iso_or_equiv` column (which stores pLDDT scores in AlphaFold models) is automatically colored according to confidence levels:
+
+| pLDDT Score | Color | Confidence |
+|-------------|-------|------------|
+| > 90 | 🔵 Dark Blue (`#0053D6`) | Very high |
+| 70-90 | 🩵 Light Blue (`#65CBF3`) | Confident |
+| 50-70 | 🟡 Yellow (`#FFDB13`) | Low |
+| < 50 | 🟠 Orange (`#FF7D45`) | Very low |
+
+This matches the standard AlphaFold color scheme, making it easy to visually assess model quality directly in your editor.
+
+---
+
 ## Installation
 
 1. **[Install from VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=N283T.mmcif-rainbow)**

@@ -34,9 +34,26 @@ interface RawDictionary {
     };
 }
 
+// Dictionary type based on _audit_conform.dict_name
+export type DictionaryType = 'mmcif_pdbx' | 'mmcif_ma';
+
+// Mapping from dict_name to dictionary file
+const DICTIONARY_FILES: Record<DictionaryType, string> = {
+    'mmcif_pdbx': 'mmcif_pdbx_v50.dic.json',
+    'mmcif_ma': 'mmcif_ma.dic.json',
+};
+
 export class DictionaryManager {
     private static instance: DictionaryManager;
-    private dictionary?: DictionaryData;
+
+    // Store dictionaries by type
+    private dictionaries: Map<DictionaryType, DictionaryData> = new Map();
+    private loadingPromises: Map<DictionaryType, Promise<void>> = new Map();
+
+    // Current active dictionary type (per-document tracking)
+    private documentDictTypes: Map<string, DictionaryType> = new Map();
+
+    private extensionUri?: vscode.Uri;
 
     public status: 'Initial' | 'Loading' | 'Loaded' | 'Failed' = 'Initial';
     public error?: string;
@@ -50,26 +67,63 @@ export class DictionaryManager {
         return DictionaryManager.instance;
     }
 
+    public setExtensionUri(uri: vscode.Uri) {
+        this.extensionUri = uri;
+    }
+
+    /**
+     * Load the default dictionary (PDBx/mmCIF)
+     */
     public async loadDictionary(extensionUri: vscode.Uri) {
-        if (this.status === 'Loading' || this.status === 'Loaded') return;
+        this.extensionUri = extensionUri;
+        await this.loadDictionaryByType('mmcif_pdbx');
+    }
 
+    /**
+     * Load a specific dictionary type
+     */
+    public async loadDictionaryByType(dictType: DictionaryType): Promise<void> {
+        if (!this.extensionUri) {
+            throw new Error('Extension URI not set');
+        }
+
+        // Return existing promise if already loading
+        const existingPromise = this.loadingPromises.get(dictType);
+        if (existingPromise) {
+            return existingPromise;
+        }
+
+        // Return immediately if already loaded
+        if (this.dictionaries.has(dictType)) {
+            return;
+        }
+
+        const loadPromise = this.doLoadDictionary(dictType);
+        this.loadingPromises.set(dictType, loadPromise);
+
+        try {
+            await loadPromise;
+        } finally {
+            this.loadingPromises.delete(dictType);
+        }
+    }
+
+    private async doLoadDictionary(dictType: DictionaryType): Promise<void> {
+        const fileName = DICTIONARY_FILES[dictType];
+        const dicUri = vscode.Uri.joinPath(this.extensionUri!, 'assets', fileName);
+
+        console.log(`DictionaryManager: Loading ${dictType} from ${dicUri.toString()}...`);
         this.status = 'Loading';
-        console.log('DictionaryManager: Starting load from JSON...');
-
-        const dicUri = vscode.Uri.joinPath(extensionUri, 'assets', 'mmcif_pdbx_v50.dic.json');
-        console.log(`DictionaryManager: Loading ${dicUri.toString()}`);
 
         try {
             const data = await vscode.workspace.fs.readFile(dicUri);
             const content = new TextDecoder().decode(data);
             const json = JSON.parse(content) as RawDictionary;
 
-            this.dictionary = { categories: new Map() };
+            const dictionary: DictionaryData = { categories: new Map() };
 
-            // The JSON has a root key like "mmcif_pdbx.dic"
-            // We'll take the first key that has a "Frames" property
+            // Find the Frames block
             let frames: { [key: string]: RawFrame } | undefined;
-
             for (const key in json) {
                 if (json[key] && json[key].Frames) {
                     frames = json[key].Frames;
@@ -91,8 +145,8 @@ export class DictionaryManager {
                     const id = frame["_category.id"];
                     const desc = this.extractString(frame["_category.description"]);
 
-                    if (!this.dictionary.categories.has(id)) {
-                        this.dictionary.categories.set(id, {
+                    if (!dictionary.categories.has(id)) {
+                        dictionary.categories.set(id, {
                             description: this.cleanDescription(desc),
                             items: new Map()
                         });
@@ -103,7 +157,6 @@ export class DictionaryManager {
             // Second pass: Add items
             for (const frameName in frames) {
                 const frame = frames[frameName];
-
                 const rawNames = frame["_item.name"];
                 const rawCats = frame["_item.category_id"];
 
@@ -116,20 +169,18 @@ export class DictionaryManager {
 
                     for (let i = 0; i < names.length; i++) {
                         const itemName = names[i];
-                        const categoryId = cats[i] || cats[0]; // Robust fallback
+                        const categoryId = cats[i] || cats[0];
 
                         if (!itemName || !categoryId) continue;
 
-                        if (!this.dictionary.categories.has(categoryId)) {
-                            // Create orphan category if not exists (should be rare)
-                            this.dictionary.categories.set(categoryId, {
+                        if (!dictionary.categories.has(categoryId)) {
+                            dictionary.categories.set(categoryId, {
                                 description: "",
                                 items: new Map()
                             });
                         }
 
-                        const catDef = this.dictionary.categories.get(categoryId)!;
-
+                        const catDef = dictionary.categories.get(categoryId)!;
                         const parts = itemName.split('.');
                         if (parts.length >= 2) {
                             const attrName = parts.slice(1).join('.');
@@ -143,27 +194,77 @@ export class DictionaryManager {
                 }
             }
 
+            this.dictionaries.set(dictType, dictionary);
             const duration = Date.now() - startTime;
             this.status = 'Loaded';
-            console.log(`Dictionary loaded in ${duration}ms. Categories: ${this.dictionary.categories.size}, Items: ${itemCount}`);
+            console.log(`Dictionary ${dictType} loaded in ${duration}ms. Categories: ${dictionary.categories.size}, Items: ${itemCount}`);
 
         } catch (e: any) {
-            console.error(`DictionaryManager: Error loading ${dicUri.toString()}:`, e);
+            console.error(`DictionaryManager: Error loading ${dictType}:`, e);
             this.status = 'Failed';
             this.error = e.message;
+            throw e;
         }
     }
 
-    public getCategory(name: string): CategoryDefinition | undefined {
-        if (!this.dictionary) return undefined;
-        // The dictionary stores "atom_site", query might be "_atom_site"
-        const cleanName = name.startsWith('_') ? name.substring(1) : name;
-        return this.dictionary.categories.get(cleanName);
+    /**
+     * Detect dictionary type from document content
+     */
+    public detectDictionaryType(documentText: string): DictionaryType {
+        // Look for _audit_conform.dict_name in the first ~500 lines
+        const lines = documentText.split('\n').slice(0, 500);
+        for (const line of lines) {
+            if (line.includes('_audit_conform.dict_name')) {
+                if (line.includes('mmcif_ma.dic')) {
+                    return 'mmcif_ma';
+                }
+            }
+        }
+        // Default to PDBx dictionary
+        return 'mmcif_pdbx';
     }
 
-    public getItem(category: string, item: string): ItemDefinition | undefined {
-        if (!this.dictionary) return undefined;
-        const cat = this.getCategory(category);
+    /**
+     * Set dictionary type for a document
+     */
+    public async setDocumentDictionary(document: vscode.TextDocument): Promise<DictionaryType> {
+        const dictType = this.detectDictionaryType(document.getText());
+        this.documentDictTypes.set(document.uri.toString(), dictType);
+
+        // Ensure the dictionary is loaded
+        await this.loadDictionaryByType(dictType);
+
+        return dictType;
+    }
+
+    /**
+     * Get dictionary type for a document
+     */
+    public getDocumentDictionaryType(document: vscode.TextDocument): DictionaryType {
+        return this.documentDictTypes.get(document.uri.toString()) || 'mmcif_pdbx';
+    }
+
+    /**
+     * Get dictionary for a specific document
+     */
+    private getDictionaryForDocument(document?: vscode.TextDocument): DictionaryData | undefined {
+        const dictType = document
+            ? this.getDocumentDictionaryType(document)
+            : 'mmcif_pdbx';
+        return this.dictionaries.get(dictType);
+    }
+
+    public getCategory(name: string, document?: vscode.TextDocument): CategoryDefinition | undefined {
+        const dictionary = this.getDictionaryForDocument(document);
+        if (!dictionary) return undefined;
+        const cleanName = name.startsWith('_') ? name.substring(1) : name;
+        return dictionary.categories.get(cleanName);
+    }
+
+    public getItem(category: string, item: string, document?: vscode.TextDocument): ItemDefinition | undefined {
+        const dictionary = this.getDictionaryForDocument(document);
+        if (!dictionary) return undefined;
+        const cat = this.getCategory(category, document);
         if (cat) {
             return cat.items.get(item);
         }

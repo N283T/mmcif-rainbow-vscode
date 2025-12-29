@@ -2,6 +2,19 @@
 
 All notable changes to the "mmcif-rainbow" extension will be documented in this file.
 
+## [0.0.6] - 2025-12-30
+### Added
+- **ModelCIF Dictionary Support**: Added support for `mmcif_ma.dic` (ModelCIF) dictionary used by AlphaFold and other structure prediction tools. The extension automatically detects the dictionary type from `_audit_conform.dict_name`.
+- **pLDDT Confidence Coloring**: For AlphaFold model files, the `B_iso_or_equiv` column values are now colored according to pLDDT confidence scores:
+  - 🔵 **> 90**: Very high confidence (dark blue `#0053D6`)
+  - 🩵 **70-90**: Confident (light blue `#65CBF3`)
+  - 🟡 **50-70**: Low confidence (yellow `#FFDB13`)
+  - 🟠 **< 50**: Very low confidence (orange `#FF7D45`)
+
+### Changed
+- **Dictionary Size Optimization**: Reduced dictionary file sizes by ~40% (4.5MB → 2.8MB) by removing unnecessary metadata (version history, examples, internal relationships).
+- **Internal Refactoring**: Split monolithic `features.ts` into focused modules for better maintainability.
+
 ## [0.0.5] - 2025-12-26
 ### Added
 - **Enhanced Dictionary Hover**: Tooltips now display the value's **description** from the mmCIF dictionary (`pdbx-v50`), along with links to the official online documentation (`mmcif.wwpdb.org`).
