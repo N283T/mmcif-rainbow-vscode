@@ -94,11 +94,49 @@
         "editor.semanticHighlighting.enabled": true,
         "editor.bracketPairColorization.enabled": false
       }
+    },
+    "configuration": {
+      "title": "Rainbow mmCIF",
+      "properties": {
+        "mmcif-rainbow.hover.showCategory": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tooltip for category names"
+        },
+        "mmcif-rainbow.hover.showAttribute": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tooltip for attributes (field names)"
+        },
+        "mmcif-rainbow.hover.showValue": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tooltip for data values"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "mmcif-rainbow.search",
+        "title": "mmCIF: Go to Category...",
+        "category": "mmCIF"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "mmcif-rainbow.search",
+          "when": "resourceLangId == mmcif",
+          "group": "navigation"
+        }
+      ]
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "build:wasm": "cd cifparse-rs && wasm-pack build --target nodejs --release",
+    "vscode:prepublish": "npm run update-dictionary && npm run build:wasm && npm run compile",
     "compile": "tsc -p ./",
+    "update-dictionary": "node scripts/fetch_dictionary.js",
     "watch": "tsc -watch -p ./",
     "lint": "echo \"No lint configured\"",
     "test": "npm run compile && node ./dist/test/runTest.js"

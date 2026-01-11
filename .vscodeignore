@@ -11,3 +11,9 @@ package-lock.json
 *.log
 *.vsix
 .DS_Store
+cifparse-rs/src/**
+cifparse-rs/target/**
+cifparse-rs/Cargo.*
+cifparse-rs/.git*
+cifparse-rs/README.md
+!cifparse-rs/pkg/**

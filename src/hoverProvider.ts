@@ -12,6 +12,11 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
 
     provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Hover> {
         this.currentDocument = document;
+        const config = vscode.workspace.getConfiguration('mmcif-rainbow');
+        const showCategory = config.get<boolean>('hover.showCategory', true);
+        const showAttribute = config.get<boolean>('hover.showAttribute', true);
+        const showValue = config.get<boolean>('hover.showValue', true);
+
         const loops = LoopCache.get(document.uri, document.version);
         if (!loops) return null;
 
@@ -28,12 +33,12 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
 
                     // Check if cursor is on Category part
                     if (position.character >= categoryStart && position.character < categoryEnd) {
-                        return this.createCategoryHover(categoryName);
+                        return showCategory ? this.createCategoryHover(categoryName) : null;
                     }
 
                     // Check if cursor is on Attribute part
                     if (position.character >= field.start && position.character <= field.start + field.length) {
-                        return this.createItemHover(categoryName, fieldName);
+                        return showAttribute ? this.createItemHover(categoryName, fieldName) : null;
                     }
                 }
             }
@@ -46,7 +51,7 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
                             const columnIndex = valueRange.columnIndex;
                             if (columnIndex < loop.fieldNames.length) {
                                 const field = loop.fieldNames[columnIndex];
-                                return this.createValueHover(loop.categoryName, field.fieldName);
+                                return showValue ? this.createValueHover(loop.categoryName, field.fieldName) : null;
                             }
                         }
                     }

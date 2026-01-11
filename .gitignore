@@ -10,3 +10,7 @@ node_modules/
 examples/7y7a.cif
 examples/7ZTS.cif
 gemmi/*
+
+# WASM build artifacts
+cifparse-rs/pkg/
+cifparse-rs/target/

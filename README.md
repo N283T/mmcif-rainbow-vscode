@@ -109,12 +109,28 @@ This matches the standard AlphaFold color scheme, making it easy to visually ass
 
 ---
 
+### 🔍 Category Search
+
+<!-- ![Search Demo](resources/search_demo.gif) -->
+
+Quickly jump to any category in large mmCIF files.
+
+**How to use:**
+- Right-click in the editor and select **mmCIF: Go to Category...**
+- Or press `Cmd+Shift+P` (Mac) / `Ctrl+Shift+P` (Win/Linux) and run the command.
+
+Select a category from the list to instantly scroll to it. The target will be highlighted to help you spot it immediately.
+
+---
+
 ## Installation
 
 1. **[Install from VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=N283T.mmcif-rainbow)**
 2. Open any `.cif` or `.mmcif` file. Highlighting and hover features will activate automatically.
-3. Or build from source:
+3. Or build from source (Git submodules required):
    ```bash
+   git clone --recursive https://github.com/N283T/mmcif-rainbow-vscode.git
+   cd mmcif-rainbow-vscode
    npm install
    npm run compile
    ```
