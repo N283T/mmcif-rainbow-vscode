@@ -2,7 +2,7 @@
 
 All notable changes to the "mmcif-rainbow" extension will be documented in this file.
 
-## [0.0.6] - 2026-01-11
+## [0.0.7] - 2026-01-11
 ### Added
 - **Category Search**: New command `mmCIF: Go to Category...` to quickly search and jump to categories. The target category is highlighted for better visibility.
 - **Context Menu Support**: Added "Go to Category" to the editor context menu (right-click).
