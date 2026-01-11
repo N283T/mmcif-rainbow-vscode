@@ -22,38 +22,38 @@ async function downloadFile(filename) {
     console.log(`Downloading ${filename} from ${url}...`);
 
     return new Promise((resolve, reject) => {
-        https.get(url, (response) => {
-            if (response.statusCode === 302 || response.statusCode === 301) {
-                // Follow redirect
-                https.get(response.headers.location, (res) => {
-                    if (res.statusCode !== 200) {
-                        reject(new Error(`Failed to download ${filename}: Status ${res.statusCode}`));
+        function get(currentUrl, redirectCount = 0) {
+            if (redirectCount > 5) {
+                reject(new Error('Too many redirects'));
+                return;
+            }
+
+            https.get(currentUrl, (response) => {
+                if (response.statusCode === 302 || response.statusCode === 301) {
+                    if (!response.headers.location) {
+                        reject(new Error('Redirect with no location header'));
                         return;
                     }
-                    res.pipe(file);
+                    // Handle relative or absolute redirects
+                    const nextUrl = new URL(response.headers.location, currentUrl).toString();
+                    get(nextUrl, redirectCount + 1);
+                } else if (response.statusCode !== 200) {
+                    reject(new Error(`Failed to download ${filename}: Status ${response.statusCode}`));
+                } else {
+                    response.pipe(file);
                     file.on('finish', () => {
                         file.close();
                         console.log(`Saved to ${destPath}`);
                         resolve();
                     });
-                }).on('error', (err) => {
-                    fs.unlink(destPath, () => { });
-                    reject(err);
-                });
-            } else if (response.statusCode !== 200) {
-                reject(new Error(`Failed to download ${filename}: Status ${response.statusCode}`));
-            } else {
-                response.pipe(file);
-                file.on('finish', () => {
-                    file.close();
-                    console.log(`Saved to ${destPath}`);
-                    resolve();
-                });
-            }
-        }).on('error', (err) => {
-            fs.unlink(destPath, () => { });
-            reject(err);
-        });
+                }
+            }).on('error', (err) => {
+                fs.unlink(destPath, () => { });
+                reject(err);
+            });
+        }
+
+        get(url);
     });
 }
 
