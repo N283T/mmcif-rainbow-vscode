@@ -111,7 +111,7 @@ This matches the standard AlphaFold color scheme, making it easy to visually ass
 
 ### 🔍 Category Search
 
-<!-- ![Search Demo](resources/search_demo.gif) -->
+![Search Demo](resources/search_demo.gif)
 
 Quickly jump to any category in large mmCIF files.
 
