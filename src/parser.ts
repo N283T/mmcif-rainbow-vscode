@@ -8,6 +8,7 @@ export interface LoopBlock {
     namesDefined: boolean; // Flag to track if column names are defined
     isInLoopBlock: boolean; // Flag to track if this loop is inside a loop_ block
     processedValueCount: number; // Counter for determining column index in stream
+    colorIndex: number; // Color index for single items (based on category item count)
     dataLines: Array<{
         line: number;
         valueRanges: Array<{ start: number; length: number; columnIndex: number }>;
@@ -101,6 +102,10 @@ export class CifParser {
         let multiLineMode = false;
         let multiLineBuffer: string[] = [];
 
+        // Track category item counts for color cycling (same logic as tokenProvider)
+        const categoryItemCounts = new Map<string, number>();
+        let lastCategory = "";
+
         for (let i = 0; i < document.lineCount; i++) {
             const line = document.lineAt(i);
             const lineText = line.text;
@@ -130,10 +135,10 @@ export class CifParser {
 
                         if (currentLoop.isInLoopBlock) {
                             colIndex = currentLoop.processedValueCount % fieldCount;
-                            tokenTypeIndex = 1 + (colIndex % 8); // rainbow2-rainbow9
                         } else {
-                            tokenTypeIndex = 2; // Single item value is always rainbow3
+                            colIndex = currentLoop.colorIndex;
                         }
+                        tokenTypeIndex = 1 + (colIndex % 8);
 
                         // Register this line in dataLines so it can be highlighted/hovered
                         if (!currentLoop.dataLines) currentLoop.dataLines = [];
@@ -164,10 +169,10 @@ export class CifParser {
                         let colIndex = 0;
                         if (currentLoop.isInLoopBlock) {
                             colIndex = currentLoop.processedValueCount % fieldCount;
-                            tokenTypeIndex = 1 + (colIndex % 8);
                         } else {
-                            tokenTypeIndex = 2;
+                            colIndex = currentLoop.colorIndex;
                         }
+                        tokenTypeIndex = 1 + (colIndex % 8);
 
                         // Register this line in dataLines
                         if (!currentLoop.dataLines) currentLoop.dataLines = [];
@@ -205,15 +210,16 @@ export class CifParser {
                             builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
                         }
                     } else {
-                        // Single item multi-line
+                        // Single item multi-line: use colorIndex for consistent color
+                        const colIndex = currentLoop.colorIndex;
                         if (!currentLoop.dataLines) currentLoop.dataLines = [];
                         currentLoop.dataLines.push({
                             line: i,
-                            valueRanges: [{ start: 0, length: lineText.length, columnIndex: 0 }]
+                            valueRanges: [{ start: 0, length: lineText.length, columnIndex: colIndex }]
                         });
 
                         if (builder && lineText.length > 0) {
-                            const tokenTypeIndex = 2; // rainbow3
+                            const tokenTypeIndex = 1 + (colIndex % 8);
                             builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
                         }
                     }
@@ -258,6 +264,7 @@ export class CifParser {
                     namesDefined: false,
                     isInLoopBlock: true,
                     processedValueCount: 0,
+                    colorIndex: 0,
                     dataLines: []
                 };
                 continue;
@@ -291,14 +298,25 @@ export class CifParser {
 
                         // If we don't have a current loop, create one for this data name
                         if (!currentLoop) {
+                            // Calculate colorIndex for this category item
+                            let colorIndex = 0;
+                            if (categoryName === lastCategory) {
+                                colorIndex = (categoryItemCounts.get(categoryName) || 0) + 1;
+                            } else {
+                                colorIndex = 0;
+                            }
+                            categoryItemCounts.set(categoryName, colorIndex);
+                            lastCategory = categoryName;
+
                             // Single items outside loop_ are immediately defined
                             currentLoop = {
                                 startLine: i,
                                 categoryName: categoryName,
                                 fieldNames: [],
-                                namesDefined: true, // Single items outside loop_ are immediately defined
+                                namesDefined: true,
                                 isInLoopBlock: false,
                                 processedValueCount: 0,
+                                colorIndex: colorIndex,
                                 dataLines: []
                             };
                         }
@@ -313,13 +331,24 @@ export class CifParser {
                             if (currentLoop.fieldNames.length > 0) {
                                 loops.push(currentLoop);
                             }
+                            // Calculate colorIndex for new category
+                            let colorIndex = 0;
+                            if (categoryName === lastCategory) {
+                                colorIndex = (categoryItemCounts.get(categoryName) || 0) + 1;
+                            } else {
+                                colorIndex = 0;
+                            }
+                            categoryItemCounts.set(categoryName, colorIndex);
+                            lastCategory = categoryName;
+
                             currentLoop = {
                                 startLine: i,
                                 categoryName: categoryName,
                                 fieldNames: [],
-                                namesDefined: currentLoop.isInLoopBlock ? false : true, // Preserve loop block status
+                                namesDefined: currentLoop.isInLoopBlock ? false : true,
                                 isInLoopBlock: currentLoop.isInLoopBlock,
                                 processedValueCount: 0,
+                                colorIndex: colorIndex,
                                 dataLines: []
                             };
                         }

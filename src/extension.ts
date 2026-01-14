@@ -5,6 +5,8 @@ import { CursorHighlighter } from "./cursorHighlighter";
 import { PlddtColorizer } from "./plddtColorizer";
 import { DictionaryManager } from "./dictionary";
 
+import { SearchProvider } from "./searchProvider";
+
 export function activate(context: vscode.ExtensionContext) {
   const provider = new MmCifTokenProvider();
   const selector: vscode.DocumentSelector = {
@@ -16,6 +18,9 @@ export function activate(context: vscode.ExtensionContext) {
   const dictManager = DictionaryManager.getInstance();
   dictManager.setExtensionUri(context.extensionUri);
   dictManager.loadDictionary(context.extensionUri);
+
+  // Initialize Search Provider
+  const searchProvider = new SearchProvider();
 
   // Register semantic tokens provider
   context.subscriptions.push(
@@ -29,6 +34,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Register hover provider
   context.subscriptions.push(
     vscode.languages.registerHoverProvider(selector, new MmCifHoverProvider(dictManager))
+  );
+
+  // Register search command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("mmcif-rainbow.search", () => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        searchProvider.showSearch(editor);
+      }
+    })
   );
 
   // Register cursor change listener for column highlighting

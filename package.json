@@ -72,7 +72,7 @@
           ],
           "rainbow7": [
             "support.class",
-            "entity.name.type"
+            "support.type"
           ],
           "rainbow8": [
             "entity.name.section",
@@ -94,6 +94,42 @@
         "editor.semanticHighlighting.enabled": true,
         "editor.bracketPairColorization.enabled": false
       }
+    },
+    "configuration": {
+      "title": "Rainbow mmCIF",
+      "properties": {
+        "mmcif-rainbow.hover.showCategory": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tooltip for category names"
+        },
+        "mmcif-rainbow.hover.showAttribute": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tooltip for attributes (field names)"
+        },
+        "mmcif-rainbow.hover.showValue": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tooltip for data values"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "mmcif-rainbow.search",
+        "title": "mmCIF: Go to Category...",
+        "category": "mmCIF"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "mmcif-rainbow.search",
+          "when": "resourceLangId == mmcif",
+          "group": "navigation"
+        }
+      ]
     }
   },
   "scripts": {
