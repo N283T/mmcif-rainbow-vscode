@@ -2,6 +2,19 @@
 
 All notable changes to the "mmcif-rainbow" extension will be documented in this file.
 
+## [0.0.8] - 2026-01-14
+### Added
+- **Category Search ("Go to Category")**: Added a new command to quickly navigate between mmCIF categories using a searchable list (`Cmd+Shift+P` -> "mmCIF: Go to Category" or via context menu).
+- **CI/CD Workflow**: Restored automated build and release workflows.
+
+### Fixed
+- **Multi-line Highlighting**: Corrected coloring for multi-line strings (`;...;`) in single-item sections to match their corresponding field names.
+- **Improved Color Consistency**: Adjusted rainbow color rotation logic for better visual coherence in non-loop blocks.
+
+## [0.0.7] - 2026-01-14
+### Changed
+- **Rollback and Recovery**: Reverted experimental WebAssembly (WASM) parser changes due to stability issues. Returned to the reliable pure TypeScript parser implementation from v0.0.6 as the new base.
+
 ## [0.0.6] - 2025-12-30
 ### Added
 - **ModelCIF Dictionary Support**: Added support for `mmcif_ma.dic` (ModelCIF) dictionary used by AlphaFold and other structure prediction tools. The extension automatically detects the dictionary type from `_audit_conform.dict_name`.
