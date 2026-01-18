@@ -3,6 +3,7 @@ import { CifParser as MmCifParser, LoopBlock } from "./parser";
 import { LoopCache } from "./loopCache";
 import { CursorHighlighter } from "./cursorHighlighter";
 import { PlddtColorizer } from "./plddtColorizer";
+import { RAINBOW_COLOR_COUNT } from "./constants";
 
 const rainbowTokenTypes = [
     "rainbow1",  // category name
@@ -84,9 +85,9 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
 
                     let tokenTypeIndex: number;
                     if (loop.isInLoopBlock) {
-                        tokenTypeIndex = 1 + (fieldIndex % 8);
+                        tokenTypeIndex = 1 + (fieldIndex % RAINBOW_COLOR_COUNT);
                     } else {
-                        tokenTypeIndex = 1 + (colorBaseIndex % 8);
+                        tokenTypeIndex = 1 + (colorBaseIndex % RAINBOW_COLOR_COUNT);
                     }
 
                     builder.push(field.line, fieldStart, fieldLength, tokenTypeIndex, 0);
@@ -101,9 +102,9 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
 
                     let tokenTypeIndex: number;
                     if (loop.isInLoopBlock) {
-                        tokenTypeIndex = 1 + (colIndex % 8);
+                        tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
                     } else {
-                        tokenTypeIndex = 1 + (colorBaseIndex % 8);
+                        tokenTypeIndex = 1 + (colorBaseIndex % RAINBOW_COLOR_COUNT);
                     }
                     builder.push(dataLine.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
                 }

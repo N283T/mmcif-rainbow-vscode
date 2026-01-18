@@ -1,5 +1,5 @@
-
 import * as vscode from 'vscode';
+import { RAINBOW_COLOR_COUNT } from './constants';
 
 export interface LoopBlock {
     startLine: number;
@@ -147,7 +147,7 @@ export class CifParser {
                         } else {
                             colIndex = currentLoop.colorIndex;
                         }
-                        tokenTypeIndex = 1 + (colIndex % 8);
+                        tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
 
                         // Register this line in dataLines so it can be highlighted/hovered
                         if (!currentLoop.dataLines) currentLoop.dataLines = [];
@@ -181,7 +181,7 @@ export class CifParser {
                         } else {
                             colIndex = currentLoop.colorIndex;
                         }
-                        tokenTypeIndex = 1 + (colIndex % 8);
+                        tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
 
                         // Register this line in dataLines
                         if (!currentLoop.dataLines) currentLoop.dataLines = [];
@@ -215,7 +215,7 @@ export class CifParser {
 
                         // Color the content line if builder is present
                         if (builder && lineText.length > 0) {
-                            const tokenTypeIndex = 1 + (colIndex % 8);
+                            const tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
                             builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
                         }
                     } else {
@@ -228,7 +228,7 @@ export class CifParser {
                         });
 
                         if (builder && lineText.length > 0) {
-                            const tokenTypeIndex = 1 + (colIndex % 8);
+                            const tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
                             builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
                         }
                     }

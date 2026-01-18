@@ -4,6 +4,7 @@ import { SEARCH_HIGHLIGHT_DURATION_MS } from './constants';
 
 export class SearchProvider implements vscode.Disposable {
     private highlightDecoration: vscode.TextEditorDecorationType;
+    private highlightTimeoutId?: ReturnType<typeof setTimeout>;
 
     constructor() {
         this.highlightDecoration = vscode.window.createTextEditorDecorationType({
@@ -13,6 +14,9 @@ export class SearchProvider implements vscode.Disposable {
     }
 
     dispose(): void {
+        if (this.highlightTimeoutId) {
+            clearTimeout(this.highlightTimeoutId);
+        }
         this.highlightDecoration.dispose();
     }
 
@@ -80,9 +84,15 @@ export class SearchProvider implements vscode.Disposable {
                 // Apply flash highlight to the specific target range
                 editor.setDecorations(this.highlightDecoration, [target.range]);
 
+                // Clear any previous timeout and set new one
+                if (this.highlightTimeoutId) {
+                    clearTimeout(this.highlightTimeoutId);
+                }
+
                 // Remove highlight after a short delay
-                setTimeout(() => {
+                this.highlightTimeoutId = setTimeout(() => {
                     editor.setDecorations(this.highlightDecoration, []);
+                    this.highlightTimeoutId = undefined;
                 }, SEARCH_HIGHLIGHT_DURATION_MS);
             }
         }
