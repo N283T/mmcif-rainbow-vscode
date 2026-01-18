@@ -43,8 +43,9 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
 
         // Cache the loops for other features
         LoopCache.set(document.uri, document.version, loops);
-        CursorHighlighter.update(vscode.window.activeTextEditor);
-        PlddtColorizer.update(vscode.window.activeTextEditor);
+        // Use getInstance() to ensure consistent instance usage
+        CursorHighlighter.getInstance().updateEditor(vscode.window.activeTextEditor);
+        PlddtColorizer.getInstance().updateEditor(vscode.window.activeTextEditor);
 
         let categoryItemCount = 0;
         let lastCategory = "";

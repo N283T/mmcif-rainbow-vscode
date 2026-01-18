@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { LoopCache } from './loopCache';
+import { SEARCH_HIGHLIGHT_DURATION_MS } from './constants';
 
-export class SearchProvider {
+export class SearchProvider implements vscode.Disposable {
     private highlightDecoration: vscode.TextEditorDecorationType;
 
     constructor() {
@@ -9,6 +10,10 @@ export class SearchProvider {
             backgroundColor: 'rgba(255, 255, 0, 0.3)', // Yellow highlight with transparency
             isWholeLine: true
         });
+    }
+
+    dispose(): void {
+        this.highlightDecoration.dispose();
     }
 
     /**
@@ -75,10 +80,10 @@ export class SearchProvider {
                 // Apply flash highlight to the specific target range
                 editor.setDecorations(this.highlightDecoration, [target.range]);
 
-                // Remove highlight after 1.5 seconds
+                // Remove highlight after a short delay
                 setTimeout(() => {
                     editor.setDecorations(this.highlightDecoration, []);
-                }, 1500);
+                }, SEARCH_HIGHLIGHT_DURATION_MS);
             }
         }
     }

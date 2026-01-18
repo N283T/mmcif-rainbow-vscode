@@ -97,6 +97,15 @@ export class CifParser {
     }
 
     public parseLoops(document: vscode.TextDocument, builder?: vscode.SemanticTokensBuilder): LoopBlock[] {
+        try {
+            return this.doParseLoops(document, builder);
+        } catch (error) {
+            console.error('CifParser: Error parsing document:', error);
+            return [];
+        }
+    }
+
+    private doParseLoops(document: vscode.TextDocument, builder?: vscode.SemanticTokensBuilder): LoopBlock[] {
         const loops: LoopBlock[] = [];
         let currentLoop: LoopBlock | null = null;
         let multiLineMode = false;
