@@ -1,5 +1,6 @@
-
 import * as vscode from 'vscode';
+import { RAINBOW_COLOR_COUNT } from './constants';
+import { Logger } from './logger';
 
 export interface LoopBlock {
     startLine: number;
@@ -97,6 +98,15 @@ export class CifParser {
     }
 
     public parseLoops(document: vscode.TextDocument, builder?: vscode.SemanticTokensBuilder): LoopBlock[] {
+        try {
+            return this.doParseLoops(document, builder);
+        } catch (error) {
+            Logger.getInstance().error('Error parsing document', error);
+            return [];
+        }
+    }
+
+    private doParseLoops(document: vscode.TextDocument, builder?: vscode.SemanticTokensBuilder): LoopBlock[] {
         const loops: LoopBlock[] = [];
         let currentLoop: LoopBlock | null = null;
         let multiLineMode = false;
@@ -138,7 +148,7 @@ export class CifParser {
                         } else {
                             colIndex = currentLoop.colorIndex;
                         }
-                        tokenTypeIndex = 1 + (colIndex % 8);
+                        tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
 
                         // Register this line in dataLines so it can be highlighted/hovered
                         if (!currentLoop.dataLines) currentLoop.dataLines = [];
@@ -172,7 +182,7 @@ export class CifParser {
                         } else {
                             colIndex = currentLoop.colorIndex;
                         }
-                        tokenTypeIndex = 1 + (colIndex % 8);
+                        tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
 
                         // Register this line in dataLines
                         if (!currentLoop.dataLines) currentLoop.dataLines = [];
@@ -206,7 +216,7 @@ export class CifParser {
 
                         // Color the content line if builder is present
                         if (builder && lineText.length > 0) {
-                            const tokenTypeIndex = 1 + (colIndex % 8);
+                            const tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
                             builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
                         }
                     } else {
@@ -219,7 +229,7 @@ export class CifParser {
                         });
 
                         if (builder && lineText.length > 0) {
-                            const tokenTypeIndex = 1 + (colIndex % 8);
+                            const tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
                             builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
                         }
                     }

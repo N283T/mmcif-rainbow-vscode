@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { LoopCache } from './loopCache';
+import { DICTIONARY_DETECTION_LINE_LIMIT, PLDDT_THRESHOLDS, PLDDT_COLORS } from './constants';
 
 /**
  * pLDDT Colorizer - Applies AlphaFold confidence colors to B_iso_or_equiv values
@@ -11,31 +12,56 @@ import { LoopCache } from './loopCache';
  * - 50 < pLDDT <= 70: #FFDB13 (yellow - low confidence)
  * - pLDDT <= 50: #FF7D45 (orange - very low confidence)
  */
-export class PlddtColorizer {
-    private static veryHighConfidence = vscode.window.createTextEditorDecorationType({
-        color: '#0053D6',
-        fontWeight: 'bold'
-    });
-    private static highConfidence = vscode.window.createTextEditorDecorationType({
-        color: '#65CBF3',
-        fontWeight: 'bold'
-    });
-    private static lowConfidence = vscode.window.createTextEditorDecorationType({
-        color: '#FFDB13',
-        fontWeight: 'bold'
-    });
-    private static veryLowConfidence = vscode.window.createTextEditorDecorationType({
-        color: '#FF7D45',
-        fontWeight: 'bold'
-    });
+export class PlddtColorizer implements vscode.Disposable {
+    private static instance: PlddtColorizer | undefined;
+
+    private veryHighConfidence: vscode.TextEditorDecorationType;
+    private highConfidence: vscode.TextEditorDecorationType;
+    private lowConfidence: vscode.TextEditorDecorationType;
+    private veryLowConfidence: vscode.TextEditorDecorationType;
+
+    constructor() {
+        this.veryHighConfidence = vscode.window.createTextEditorDecorationType({
+            color: PLDDT_COLORS.VERY_HIGH,
+            fontWeight: 'bold'
+        });
+        this.highConfidence = vscode.window.createTextEditorDecorationType({
+            color: PLDDT_COLORS.HIGH,
+            fontWeight: 'bold'
+        });
+        this.lowConfidence = vscode.window.createTextEditorDecorationType({
+            color: PLDDT_COLORS.LOW,
+            fontWeight: 'bold'
+        });
+        this.veryLowConfidence = vscode.window.createTextEditorDecorationType({
+            color: PLDDT_COLORS.VERY_LOW,
+            fontWeight: 'bold'
+        });
+    }
+
+    static getInstance(): PlddtColorizer {
+        if (!PlddtColorizer.instance) {
+            PlddtColorizer.instance = new PlddtColorizer();
+        }
+        return PlddtColorizer.instance;
+    }
+
+    dispose(): void {
+        this.veryHighConfidence.dispose();
+        this.highConfidence.dispose();
+        this.lowConfidence.dispose();
+        this.veryLowConfidence.dispose();
+        PlddtColorizer.instance = undefined;
+    }
 
     /**
      * Check if document is a ModelCIF file (AlphaFold, etc.)
+     * Uses line-by-line reading to avoid loading entire file into memory.
      */
-    static isModelCif(document: vscode.TextDocument): boolean {
-        const text = document.getText();
-        const lines = text.split('\n').slice(0, 500);
-        for (const line of lines) {
+    isModelCif(document: vscode.TextDocument): boolean {
+        const lineLimit = Math.min(document.lineCount, DICTIONARY_DETECTION_LINE_LIMIT);
+        for (let i = 0; i < lineLimit; i++) {
+            const line = document.lineAt(i).text;
             if (line.includes('_audit_conform.dict_name') && line.includes('mmcif_ma.dic')) {
                 return true;
             }
@@ -44,9 +70,23 @@ export class PlddtColorizer {
     }
 
     /**
-     * Update pLDDT coloring for the given editor
+     * @deprecated Use getInstance().isModelCif() instead
+     */
+    static isModelCif(document: vscode.TextDocument): boolean {
+        return PlddtColorizer.getInstance().isModelCif(document);
+    }
+
+    /**
+     * @deprecated Use getInstance().updateEditor() instead
      */
     static update(editor: vscode.TextEditor | undefined): void {
+        PlddtColorizer.getInstance().updateEditor(editor);
+    }
+
+    /**
+     * Update pLDDT coloring for the given editor
+     */
+    updateEditor(editor: vscode.TextEditor | undefined): void {
         if (!editor || editor.document.languageId !== 'mmcif') {
             return;
         }
@@ -107,11 +147,11 @@ export class PlddtColorizer {
                             dataLine.line, valueRange.start + valueRange.length
                         );
 
-                        if (plddt > 90) {
+                        if (plddt > PLDDT_THRESHOLDS.VERY_HIGH) {
                             veryHighRanges.push(range);
-                        } else if (plddt > 70) {
+                        } else if (plddt > PLDDT_THRESHOLDS.HIGH) {
                             highRanges.push(range);
-                        } else if (plddt > 50) {
+                        } else if (plddt > PLDDT_THRESHOLDS.LOW) {
                             lowRanges.push(range);
                         } else {
                             veryLowRanges.push(range);

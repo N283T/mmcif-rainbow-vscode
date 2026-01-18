@@ -4,8 +4,11 @@ import { MmCifHoverProvider } from "./hoverProvider";
 import { CursorHighlighter } from "./cursorHighlighter";
 import { PlddtColorizer } from "./plddtColorizer";
 import { DictionaryManager } from "./dictionary";
-
 import { SearchProvider } from "./searchProvider";
+import { LoopCache } from "./loopCache";
+import { Logger } from "./logger";
+import { debounce } from "./utils";
+import { CURSOR_UPDATE_DEBOUNCE_MS, PLDDT_UPDATE_DELAY_MS } from "./constants";
 
 export function activate(context: vscode.ExtensionContext) {
   const provider = new MmCifTokenProvider();
@@ -14,13 +17,24 @@ export function activate(context: vscode.ExtensionContext) {
     scheme: "file"
   };
 
+  // Initialize Logger
+  const logger = Logger.getInstance();
+  context.subscriptions.push(logger.getOutputChannel());
+
   // Initialize Dictionary Manager
   const dictManager = DictionaryManager.getInstance();
   dictManager.setExtensionUri(context.extensionUri);
   dictManager.loadDictionary(context.extensionUri);
 
-  // Initialize Search Provider
+  // Initialize disposable providers and register them
+  const cursorHighlighter = CursorHighlighter.getInstance();
+  const plddtColorizer = PlddtColorizer.getInstance();
   const searchProvider = new SearchProvider();
+
+  // Register disposables
+  context.subscriptions.push(cursorHighlighter);
+  context.subscriptions.push(plddtColorizer);
+  context.subscriptions.push(searchProvider);
 
   // Register semantic tokens provider
   context.subscriptions.push(
@@ -46,18 +60,22 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Register cursor change listener for column highlighting
+  // Register cursor change listener for column highlighting (debounced to avoid excessive updates)
+  const debouncedCursorUpdate = debounce((editor: vscode.TextEditor) => {
+    cursorHighlighter.updateEditor(editor);
+  }, CURSOR_UPDATE_DEBOUNCE_MS);
+
   context.subscriptions.push(
     vscode.window.onDidChangeTextEditorSelection(event => {
-      CursorHighlighter.update(event.textEditor);
+      debouncedCursorUpdate(event.textEditor);
     })
   );
 
   // Update on active editor change
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(editor => {
-      CursorHighlighter.update(editor);
-      PlddtColorizer.update(editor);
+      cursorHighlighter.updateEditor(editor);
+      plddtColorizer.updateEditor(editor);
     })
   );
 
@@ -66,7 +84,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeTextDocument(event => {
       const editor = vscode.window.activeTextEditor;
       if (editor && editor.document === event.document) {
-        setTimeout(() => PlddtColorizer.update(editor), 100);
+        setTimeout(() => plddtColorizer.updateEditor(editor), PLDDT_UPDATE_DELAY_MS);
       }
     })
   );
@@ -80,6 +98,13 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Clean up LoopCache when document is closed to prevent memory leaks
+  context.subscriptions.push(
+    vscode.workspace.onDidCloseTextDocument(document => {
+      LoopCache.delete(document.uri);
+    })
+  );
+
   // Check currently open documents
   vscode.workspace.textDocuments.forEach(document => {
     if (document.languageId === 'mmcif') {
@@ -89,8 +114,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Apply pLDDT coloring to currently active editor
   if (vscode.window.activeTextEditor) {
-    PlddtColorizer.update(vscode.window.activeTextEditor);
+    plddtColorizer.updateEditor(vscode.window.activeTextEditor);
   }
 }
 
-export function deactivate() { }
+export function deactivate() {
+  // Disposables registered to context.subscriptions are automatically disposed
+}

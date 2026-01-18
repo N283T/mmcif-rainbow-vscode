@@ -1,5 +1,6 @@
-
 import * as vscode from 'vscode';
+import { DICTIONARY_DETECTION_LINE_LIMIT } from './constants';
+import { Logger } from './logger';
 
 export interface ItemDefinition {
     description: string;
@@ -112,7 +113,7 @@ export class DictionaryManager {
         const fileName = DICTIONARY_FILES[dictType];
         const dicUri = vscode.Uri.joinPath(this.extensionUri!, 'assets', fileName);
 
-        console.log(`DictionaryManager: Loading ${dictType} from ${dicUri.toString()}...`);
+        Logger.getInstance().info(`Loading ${dictType} dictionary from ${dicUri.toString()}...`);
         this.status = 'Loading';
 
         try {
@@ -197,22 +198,47 @@ export class DictionaryManager {
             this.dictionaries.set(dictType, dictionary);
             const duration = Date.now() - startTime;
             this.status = 'Loaded';
-            console.log(`Dictionary ${dictType} loaded in ${duration}ms. Categories: ${dictionary.categories.size}, Items: ${itemCount}`);
+            Logger.getInstance().info(`Dictionary ${dictType} loaded in ${duration}ms. Categories: ${dictionary.categories.size}, Items: ${itemCount}`);
 
         } catch (e: any) {
-            console.error(`DictionaryManager: Error loading ${dictType}:`, e);
+            Logger.getInstance().error(`Error loading ${dictType} dictionary`, e);
             this.status = 'Failed';
             this.error = e.message;
+
+            // Notify user about the dictionary load failure
+            vscode.window.showWarningMessage(
+                `mmCIF Rainbow: Failed to load ${dictType} dictionary. Hover documentation may be unavailable. Error: ${e.message}`
+            );
+
             throw e;
         }
     }
 
     /**
-     * Detect dictionary type from document content
+     * Detect dictionary type from document content.
+     * Uses line-by-line reading to avoid loading entire file into memory for large files.
+     */
+    public detectDictionaryTypeFromDocument(document: vscode.TextDocument): DictionaryType {
+        const lineLimit = Math.min(document.lineCount, DICTIONARY_DETECTION_LINE_LIMIT);
+        for (let i = 0; i < lineLimit; i++) {
+            const line = document.lineAt(i).text;
+            if (line.includes('_audit_conform.dict_name')) {
+                if (line.includes('mmcif_ma.dic')) {
+                    return 'mmcif_ma';
+                }
+            }
+        }
+        // Default to PDBx dictionary
+        return 'mmcif_pdbx';
+    }
+
+    /**
+     * Detect dictionary type from document content (legacy method for backward compatibility)
+     * @deprecated Use detectDictionaryTypeFromDocument instead
      */
     public detectDictionaryType(documentText: string): DictionaryType {
         // Look for _audit_conform.dict_name in the first ~500 lines
-        const lines = documentText.split('\n').slice(0, 500);
+        const lines = documentText.split('\n').slice(0, DICTIONARY_DETECTION_LINE_LIMIT);
         for (const line of lines) {
             if (line.includes('_audit_conform.dict_name')) {
                 if (line.includes('mmcif_ma.dic')) {
@@ -228,7 +254,7 @@ export class DictionaryManager {
      * Set dictionary type for a document
      */
     public async setDocumentDictionary(document: vscode.TextDocument): Promise<DictionaryType> {
-        const dictType = this.detectDictionaryType(document.getText());
+        const dictType = this.detectDictionaryTypeFromDocument(document);
         this.documentDictTypes.set(document.uri.toString(), dictType);
 
         // Ensure the dictionary is loaded

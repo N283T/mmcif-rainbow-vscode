@@ -3,6 +3,7 @@ import { CifParser as MmCifParser, LoopBlock } from "./parser";
 import { LoopCache } from "./loopCache";
 import { CursorHighlighter } from "./cursorHighlighter";
 import { PlddtColorizer } from "./plddtColorizer";
+import { RAINBOW_COLOR_COUNT } from "./constants";
 
 const rainbowTokenTypes = [
     "rainbow1",  // category name
@@ -43,8 +44,9 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
 
         // Cache the loops for other features
         LoopCache.set(document.uri, document.version, loops);
-        CursorHighlighter.update(vscode.window.activeTextEditor);
-        PlddtColorizer.update(vscode.window.activeTextEditor);
+        // Use getInstance() to ensure consistent instance usage
+        CursorHighlighter.getInstance().updateEditor(vscode.window.activeTextEditor);
+        PlddtColorizer.getInstance().updateEditor(vscode.window.activeTextEditor);
 
         let categoryItemCount = 0;
         let lastCategory = "";
@@ -83,9 +85,9 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
 
                     let tokenTypeIndex: number;
                     if (loop.isInLoopBlock) {
-                        tokenTypeIndex = 1 + (fieldIndex % 8);
+                        tokenTypeIndex = 1 + (fieldIndex % RAINBOW_COLOR_COUNT);
                     } else {
-                        tokenTypeIndex = 1 + (colorBaseIndex % 8);
+                        tokenTypeIndex = 1 + (colorBaseIndex % RAINBOW_COLOR_COUNT);
                     }
 
                     builder.push(field.line, fieldStart, fieldLength, tokenTypeIndex, 0);
@@ -100,9 +102,9 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
 
                     let tokenTypeIndex: number;
                     if (loop.isInLoopBlock) {
-                        tokenTypeIndex = 1 + (colIndex % 8);
+                        tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
                     } else {
-                        tokenTypeIndex = 1 + (colorBaseIndex % 8);
+                        tokenTypeIndex = 1 + (colorBaseIndex % RAINBOW_COLOR_COUNT);
                     }
                     builder.push(dataLine.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
                 }

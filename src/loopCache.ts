@@ -19,4 +19,18 @@ export class LoopCache {
         }
         return undefined;
     }
+
+    /**
+     * Remove cached data for a document (called when document is closed)
+     */
+    static delete(uri: vscode.Uri): boolean {
+        return this.cache.delete(uri.toString());
+    }
+
+    /**
+     * Clear all cached data
+     */
+    static clear(): void {
+        this.cache.clear();
+    }
 }

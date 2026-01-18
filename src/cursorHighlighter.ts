@@ -4,13 +4,37 @@ import { LoopCache } from './loopCache';
 /**
  * Highlights the current column when cursor is in a loop block.
  */
-export class CursorHighlighter {
-    private static decorationType = vscode.window.createTextEditorDecorationType({
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderRadius: '2px'
-    });
+export class CursorHighlighter implements vscode.Disposable {
+    private static instance: CursorHighlighter | undefined;
+    private decorationType: vscode.TextEditorDecorationType;
 
-    static update(editor: vscode.TextEditor | undefined) {
+    constructor() {
+        this.decorationType = vscode.window.createTextEditorDecorationType({
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '2px'
+        });
+    }
+
+    static getInstance(): CursorHighlighter {
+        if (!CursorHighlighter.instance) {
+            CursorHighlighter.instance = new CursorHighlighter();
+        }
+        return CursorHighlighter.instance;
+    }
+
+    dispose(): void {
+        this.decorationType.dispose();
+        CursorHighlighter.instance = undefined;
+    }
+
+    /**
+     * @deprecated Use getInstance().updateEditor() instead
+     */
+    static update(editor: vscode.TextEditor | undefined): void {
+        CursorHighlighter.getInstance().updateEditor(editor);
+    }
+
+    updateEditor(editor: vscode.TextEditor | undefined): void {
         if (!editor || editor.document.languageId !== 'mmcif') {
             return;
         }
