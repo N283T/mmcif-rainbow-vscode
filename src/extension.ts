@@ -6,6 +6,7 @@ import { PlddtColorizer } from "./plddtColorizer";
 import { DictionaryManager } from "./dictionary";
 import { SearchProvider } from "./searchProvider";
 import { LoopCache } from "./loopCache";
+import { Logger } from "./logger";
 import { debounce } from "./utils";
 import { CURSOR_UPDATE_DEBOUNCE_MS, PLDDT_UPDATE_DELAY_MS } from "./constants";
 
@@ -15,6 +16,10 @@ export function activate(context: vscode.ExtensionContext) {
     language: "mmcif",
     scheme: "file"
   };
+
+  // Initialize Logger
+  const logger = Logger.getInstance();
+  context.subscriptions.push(logger.getOutputChannel());
 
   // Initialize Dictionary Manager
   const dictManager = DictionaryManager.getInstance();

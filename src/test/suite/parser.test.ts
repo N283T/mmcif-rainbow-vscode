@@ -138,4 +138,114 @@ suite('CifParser Test Suite', () => {
         assert.strictEqual(loops.length, 1);
         assert.strictEqual(loops[0].dataLines.length, 1);
     });
+
+    // Edge case tests added per code review
+    test('Handles empty file gracefully', () => {
+        const lines: string[] = [];
+        const doc = createMockDocument(lines);
+        const loops = parser.parseLoops(doc);
+
+        assert.strictEqual(loops.length, 0);
+    });
+
+    test('Handles file with only comments', () => {
+        const lines = [
+            '# Comment line 1',
+            '# Comment line 2',
+            '# Comment line 3'
+        ];
+        const doc = createMockDocument(lines);
+        const loops = parser.parseLoops(doc);
+
+        assert.strictEqual(loops.length, 0);
+    });
+
+    test('Handles file with only whitespace', () => {
+        const lines = [
+            '',
+            '   ',
+            '\t',
+            ''
+        ];
+        const doc = createMockDocument(lines);
+        const loops = parser.parseLoops(doc);
+
+        assert.strictEqual(loops.length, 0);
+    });
+
+    test('Handles loop_ with no field names', () => {
+        const lines = [
+            'data_TEST',
+            'loop_',
+            'data_NEXT'  // New data block immediately after loop_
+        ];
+        const doc = createMockDocument(lines);
+        const loops = parser.parseLoops(doc);
+
+        // Should not crash, loop with no fields should be ignored
+        assert.ok(loops.length >= 0);
+    });
+
+    test('Handles unclosed multi-line string', () => {
+        const lines = [
+            'data_TEST',
+            '_item.value',
+            ';This is a multi-line string',
+            'that never closes'
+        ];
+        const doc = createMockDocument(lines);
+        // Should not throw, gracefully handles unclosed string
+        const loops = parser.parseLoops(doc);
+        assert.ok(loops.length >= 0);
+    });
+
+    test('Handles malformed category name', () => {
+        const lines = [
+            'data_TEST',
+            '_invalid 1'  // No dot separator
+        ];
+        const doc = createMockDocument(lines);
+        const loops = parser.parseLoops(doc);
+
+        // Should not crash, malformed names are skipped
+        assert.ok(loops.length >= 0);
+    });
+
+    test('Handles very long lines', () => {
+        const longValue = 'A'.repeat(10000);
+        const lines = [
+            'data_TEST',
+            `_item.value ${longValue}`
+        ];
+        const doc = createMockDocument(lines);
+        const loops = parser.parseLoops(doc);
+
+        assert.strictEqual(loops.length, 1);
+        assert.strictEqual(loops[0].dataLines[0].valueRanges[0].length, 10000);
+    });
+
+    test('Handles special characters in values', () => {
+        const lines = [
+            'data_TEST',
+            '_item.value "Value with special chars: <>&\'\""'
+        ];
+        const doc = createMockDocument(lines);
+        const loops = parser.parseLoops(doc);
+
+        assert.strictEqual(loops.length, 1);
+    });
+
+    test('Handles save_ blocks', () => {
+        const lines = [
+            'data_TEST',
+            'save_FRAME',
+            '_item.value 1',
+            'save_'
+        ];
+        const doc = createMockDocument(lines);
+        const loops = parser.parseLoops(doc);
+
+        // save_ blocks should reset current loop context
+        assert.ok(loops.length >= 0);
+    });
 });

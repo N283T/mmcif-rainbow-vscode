@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { RAINBOW_COLOR_COUNT } from './constants';
+import { Logger } from './logger';
 
 export interface LoopBlock {
     startLine: number;
@@ -100,7 +101,7 @@ export class CifParser {
         try {
             return this.doParseLoops(document, builder);
         } catch (error) {
-            console.error('CifParser: Error parsing document:', error);
+            Logger.getInstance().error('Error parsing document', error);
             return [];
         }
     }

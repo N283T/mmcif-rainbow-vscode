@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { DICTIONARY_DETECTION_LINE_LIMIT } from './constants';
+import { Logger } from './logger';
 
 export interface ItemDefinition {
     description: string;
@@ -112,7 +113,7 @@ export class DictionaryManager {
         const fileName = DICTIONARY_FILES[dictType];
         const dicUri = vscode.Uri.joinPath(this.extensionUri!, 'assets', fileName);
 
-        console.log(`DictionaryManager: Loading ${dictType} from ${dicUri.toString()}...`);
+        Logger.getInstance().info(`Loading ${dictType} dictionary from ${dicUri.toString()}...`);
         this.status = 'Loading';
 
         try {
@@ -197,10 +198,10 @@ export class DictionaryManager {
             this.dictionaries.set(dictType, dictionary);
             const duration = Date.now() - startTime;
             this.status = 'Loaded';
-            console.log(`Dictionary ${dictType} loaded in ${duration}ms. Categories: ${dictionary.categories.size}, Items: ${itemCount}`);
+            Logger.getInstance().info(`Dictionary ${dictType} loaded in ${duration}ms. Categories: ${dictionary.categories.size}, Items: ${itemCount}`);
 
         } catch (e: any) {
-            console.error(`DictionaryManager: Error loading ${dictType}:`, e);
+            Logger.getInstance().error(`Error loading ${dictType} dictionary`, e);
             this.status = 'Failed';
             this.error = e.message;
 
