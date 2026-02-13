@@ -1,59 +1,87 @@
-# Change Log
+# Changelog
 
 All notable changes to the "mmcif-rainbow" extension will be documented in this file.
 
-## [0.0.8] - 2026-01-14
-### Added
-- **Category Search ("Go to Category")**: Added a new command to quickly navigate between mmCIF categories using a searchable list (`Cmd+Shift+P` -> "mmCIF: Go to Category" or via context menu).
-- **CI/CD Workflow**: Restored automated build and release workflows.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+### Changed
+- Separated parser from token rendering for cleaner architecture (parser no longer depends on SemanticTokensBuilder)
+- Unified `CategoryBlock` model replacing old `LoopBlock` with `isInLoopBlock` branching
+- Improved color palette with explicit default colors (inspired by Rainbow CSV), preventing category-attribute color collision
+- Switched dictionary build script from blacklist to whitelist approach, reducing asset size by 24% (5.4MB to 4.1MB)
+- Removed CI cron schedule for dictionary updates (manual trigger only)
+- Renamed internal `namesDefined` to `headerComplete` for clarity
+- Removed side effects from token provider (decoration updates now managed by extension lifecycle)
 
 ### Fixed
-- **Multi-line Highlighting**: Corrected coloring for multi-line strings (`;...;`) in single-item sections to match their corresponding field names.
-- **Improved Color Consistency**: Adjusted rainbow color rotation logic for better visual coherence in non-loop blocks.
+- Multi-line string (`;...;`) hover now shows as a single unified tooltip instead of per-line
+- Off-by-one error in cursor highlighting and hover bounds checks (`<=` to `<`)
+- Imprecise category matching in pLDDT colorizer (`includes` to exact match)
+- Memory leak in dictionary manager (document tracking not cleaned on close)
+
+### Removed
+- Deprecated `detectDictionaryType()` method (replaced by `detectDictionaryTypeFromDocument()`)
+- Unused `type` field from `ItemDefinition` interface
+- Unused `currentDocument` property from hover provider
+- TextMate patterns for `loop_` keyword and `#` comment coloring (now use default text foreground)
+
+## [0.0.8] - 2026-01-14
+
+### Added
+- Category Search ("Go to Category"): navigate between mmCIF categories using a searchable list
+- CI/CD Workflow: restored automated build and release workflows
+
+### Fixed
+- Multi-line highlighting: corrected coloring for multi-line strings (`;...;`) in single-item sections
+- Improved color consistency: adjusted rainbow color rotation logic for non-loop blocks
 
 ## [0.0.7] - 2026-01-14
+
 ### Changed
-- **Rollback and Recovery**: Reverted experimental WebAssembly (WASM) parser changes due to stability issues. Returned to the reliable pure TypeScript parser implementation from v0.0.6 as the new base.
+- Rollback and Recovery: reverted experimental WebAssembly parser due to stability issues, returned to pure TypeScript parser
 
 ## [0.0.6] - 2025-12-30
+
 ### Added
-- **ModelCIF Dictionary Support**: Added support for `mmcif_ma.dic` (ModelCIF) dictionary used by AlphaFold and other structure prediction tools. The extension automatically detects the dictionary type from `_audit_conform.dict_name`.
-- **pLDDT Confidence Coloring**: For AlphaFold model files, the `B_iso_or_equiv` column values are now colored according to pLDDT confidence scores:
-  - 🔵 **> 90**: Very high confidence (dark blue `#0053D6`)
-  - 🩵 **70-90**: Confident (light blue `#65CBF3`)
-  - 🟡 **50-70**: Low confidence (yellow `#FFDB13`)
-  - 🟠 **< 50**: Very low confidence (orange `#FF7D45`)
+- ModelCIF dictionary support (`mmcif_ma.dic`) for AlphaFold and structure prediction tools with automatic detection via `_audit_conform.dict_name`
+- pLDDT confidence coloring for `B_iso_or_equiv` values in AlphaFold model files
 
 ### Changed
-- **Dictionary Size Optimization**: Reduced dictionary file sizes by ~40% (4.5MB → 2.8MB) by removing unnecessary metadata (version history, examples, internal relationships).
-- **Internal Refactoring**: Split monolithic `features.ts` into focused modules for better maintainability.
+- Reduced dictionary file sizes by ~40% (4.5MB to 2.8MB) by removing unnecessary metadata
+- Split monolithic `features.ts` into focused modules
 
 ## [0.0.5] - 2025-12-26
+
 ### Added
-- **Enhanced Dictionary Hover**: Tooltips now display the value's **description** from the mmCIF dictionary (`pdbx-v50`), along with links to the official online documentation (`mmcif.wwpdb.org`).
-- **Context-Aware Hover**: Hovering over category names (e.g., `_atom_site`) vs. attribute names (e.g., `id`) shows relevant documentation for each.
-- **Dictionary Automation**: Implemented a CI/CD pipeline (GitHub Actions) to automatically update the dictionary file monthly via Pull Requests.
+- Enhanced dictionary hover with descriptions from mmCIF dictionary (pdbx-v50) and links to official documentation
+- Context-aware hover: separate documentation for category names vs attribute names
+- Dictionary automation: GitHub Actions pipeline for monthly dictionary updates via Pull Requests
 
 ### Changed
-- **Optimized Asset Size**: Removed 5MB+ obsolete `.xsd` file and unnecessary directories, significantly reducing extension size.
-- **Internal**: Refactored hover provider logic for better maintainability.
+- Removed 5MB+ obsolete `.xsd` file and unnecessary directories, reducing extension size
 
 ## [0.0.4] - 2025-12-25
+
 ### Changed
-- **Documentation Updated**: Added clarification about VS Code's 50MB file size limit for extensions.
+- Added clarification about VS Code's 50MB file size limit for extensions
 
 ## [0.0.3] - 2025-12-25
+
 ### Changed
-- Added file size limit (2MB) to prevent performance issues with large CIF files. A warning will be shown if a file exceeds this limit.
+- Added file size limit (2MB) to prevent performance issues with large CIF files
 
 ## [0.0.2] - 2025-12-25
+
 ### Fixed
-- Fixed a bug where non-loop items (single key-value pairs) were not cycling colors correctly.
+- Non-loop items (single key-value pairs) not cycling colors correctly
 
 ## [0.0.1] - 2025-12-25
+
 ### Added
-- Initial release.
-- **Rainbow Column Highlighting**: Semantic coloring for mmCIF `loop_` columns.
-- **Cursor Column Highlighting**: Highlights the entire column (header + values) when the cursor is on any part of it.
-- **Hover Support**: Shows the full `_category.field` tag name when hovering over data values.
-- Support for multi-line strings (`;...;`) and quoted strings.
+- Initial release
+- Rainbow column highlighting: semantic coloring for mmCIF `loop_` columns
+- Cursor column highlighting: highlights entire column when cursor is on any part
+- Hover support: shows full `_category.field` tag name when hovering over data values
+- Support for multi-line strings (`;...;`) and quoted strings
