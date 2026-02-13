@@ -4,7 +4,6 @@ import { Logger } from './logger';
 
 export interface ItemDefinition {
     description: string;
-    type?: string;
 }
 
 export interface CategoryDefinition {
@@ -23,7 +22,6 @@ interface RawFrame {
     "_item.name"?: string | string[];
     "_item.category_id"?: string | string[];
     "_item_description.description"?: string | string[];
-    "_item_type.code"?: string | string[];
     [key: string]: any;
 }
 
@@ -166,7 +164,6 @@ export class DictionaryManager {
                     const cats: any[] = Array.isArray(rawCats) ? rawCats : [rawCats];
 
                     const desc = this.extractString(frame["_item_description.description"]);
-                    const typeSnippet = this.extractString(frame["_item_type.code"]);
 
                     for (let i = 0; i < names.length; i++) {
                         const itemName = names[i];
@@ -187,7 +184,6 @@ export class DictionaryManager {
                             const attrName = parts.slice(1).join('.');
                             catDef.items.set(attrName, {
                                 description: this.cleanDescription(desc),
-                                type: typeSnippet
                             });
                             itemCount++;
                         }
