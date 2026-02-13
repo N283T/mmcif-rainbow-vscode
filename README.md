@@ -13,43 +13,42 @@ Designed to make reading and editing complex mmCIF files effortless. Unlike stan
 
 ### Rainbow Block Highlighting
 
-![Rainbow Demo](resources/rainbow_mmcif_movie_01.gif)
+![Rainbow Demo](resources/rainbow.gif)
 
 All data items — whether in a `loop_` or a single-item section — are treated as a unified **Block**.
 
 - **Category** (e.g., `_atom_site`) and **Item** (e.g., `.id`) are clearly distinguished with different colors
 - Columns are automatically colored using a cycling rainbow palette to help you quickly align keys with their values
 
-![Atomsite Overview](resources/overview_atomsite.png)
-
 ---
 
 ### Integrated Dictionary Hover
 
-![Hover Demo](resources/rainbow_mmcif_movie_02.gif)
+![Hover Demo](resources/hover.gif)
 
 Instant access to the official PDBx/mmCIF dictionary. Hover over any Category, Item, or data value to see its definition.
 
 - **Context-Aware**: Dynamically displays documentation based on whether you hover over a **Category**, **Item**, or **Value**
 - **Direct Links**: Quick navigation to official wwPDB documentation for every tag
 
-| Hover Target | Example |
-|---|---|
-| **Category** | ![Hover Category](resources/hover_category.png) |
-| **Item** | ![Hover Item](resources/hover_item.png) |
-| **Value** | ![Hover Value](resources/hover_value.png) |
-
 ---
 
 ### Interactive Column Highlighting
 
-![Interactive Demo](resources/rainbow_mmcif_movie_03.gif)
+![Interactive Demo](resources/highlight.gif)
 
 Place your cursor on any field name or data value to highlight the entire column. This makes it easy to track columns in dense data tables.
 
-![Column Focus 1](resources/highlight_01.png)
+---
 
-![Column Focus 2](resources/highlight_02.png)
+### Category Search
+
+![Category Search](resources/move.gif)
+
+Quickly jump to any mmCIF category in the file.
+
+- **Command Palette**: `Cmd+Shift+P` (macOS) / `Ctrl+Shift+P` (Windows/Linux) → **mmCIF: Go to Category...**
+- **Right-Click**: Context menu → **mmCIF: Go to Category...**
 
 ---
 
