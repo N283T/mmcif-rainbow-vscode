@@ -6,12 +6,9 @@ import { DictionaryManager } from './dictionary';
  * Provides hover information for mmCIF categories and items.
  */
 export class MmCifHoverProvider implements vscode.HoverProvider {
-    private currentDocument?: vscode.TextDocument;
-
     constructor(private dictionaryManager: DictionaryManager) { }
 
     provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Hover> {
-        this.currentDocument = document;
         const blocks = BlockCache.get(document.uri, document.version);
         if (!blocks) return null;
 
@@ -23,17 +20,14 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
                     const categoryName = block.categoryName;
                     const fieldName = field.fieldName;
 
-                    const categoryStart = field.start - 1 - categoryName.length;
-                    const categoryEnd = field.start - 1;
-
-                    // Check if cursor is on Category part
-                    if (position.character >= categoryStart && position.character < categoryEnd) {
-                        return this.createCategoryHover(categoryName);
+                    // Check if cursor is on Category part (including the dot)
+                    if (position.character >= field.categoryStart && position.character < field.categoryStart + field.categoryLength) {
+                        return this.createCategoryHover(categoryName, document);
                     }
 
                     // Check if cursor is on Attribute part
-                    if (position.character >= field.start && position.character <= field.start + field.length) {
-                        return this.createItemHover(categoryName, fieldName);
+                    if (position.character >= field.start && position.character < field.start + field.length) {
+                        return this.createItemHover(categoryName, fieldName, document);
                     }
                 }
             }
@@ -42,7 +36,7 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
             for (const dataRow of block.dataRows) {
                 if (dataRow.line === position.line) {
                     for (const valueRange of dataRow.valueRanges) {
-                        if (position.character >= valueRange.start && position.character <= valueRange.start + valueRange.length) {
+                        if (position.character >= valueRange.start && position.character < valueRange.start + valueRange.length) {
                             const columnIndex = valueRange.columnIndex;
                             if (columnIndex < block.fieldNames.length) {
                                 const field = block.fieldNames[columnIndex];
@@ -70,7 +64,7 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
         return new vscode.Hover(md, range);
     }
 
-    private createCategoryHover(categoryName: string): vscode.Hover {
+    private createCategoryHover(categoryName: string, document: vscode.TextDocument): vscode.Hover {
         const md = new vscode.MarkdownString();
         const cleanName = this.getCleanCategoryName(categoryName);
         const url = this.getCategoryUrl(cleanName);
@@ -80,7 +74,7 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
         md.appendMarkdown(`---\n\n`);
 
         if (this.dictionaryManager.status === 'Loaded') {
-            const catDef = this.dictionaryManager.getCategory(categoryName, this.currentDocument);
+            const catDef = this.dictionaryManager.getCategory(categoryName, document);
             if (catDef) {
                 md.appendMarkdown(`${catDef.description}`);
             }
@@ -93,7 +87,7 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
         return new vscode.Hover(md);
     }
 
-    private createItemHover(categoryName: string, fieldName: string): vscode.Hover {
+    private createItemHover(categoryName: string, fieldName: string, document: vscode.TextDocument): vscode.Hover {
         const fullTagName = `${categoryName}.${fieldName}`;
         const cleanCatName = this.getCleanCategoryName(categoryName);
         const itemUrl = this.getItemUrl(cleanCatName, fieldName);
@@ -107,7 +101,7 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
         md.appendMarkdown(`Category : [\`${cleanCatName}\`](${catUrl})\n\n`);
         md.appendMarkdown(`Attribute : \`${fieldName}\`\n\n`);
 
-        const itemDef = this.dictionaryManager.getItem(categoryName, fieldName, this.currentDocument);
+        const itemDef = this.dictionaryManager.getItem(categoryName, fieldName, document);
 
         md.appendMarkdown(`---\n\n`);
 

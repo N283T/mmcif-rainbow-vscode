@@ -98,7 +98,7 @@ export class PlddtColorizer implements vscode.Disposable {
         const veryLowRanges: vscode.Range[] = [];
 
         for (const block of blocks) {
-            if (!block.categoryName.includes('atom_site')) {
+            if (block.categoryName !== '_atom_site') {
                 continue;
             }
 

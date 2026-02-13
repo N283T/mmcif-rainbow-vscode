@@ -11,8 +11,8 @@
  * @param delay The delay in milliseconds
  * @returns A debounced version of the function
  */
-export function debounce<T extends unknown[], R>(
-    fn: (...args: T) => R,
+export function debounce<T extends unknown[]>(
+    fn: (...args: T) => void,
     delay: number
 ): (...args: T) => void {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;

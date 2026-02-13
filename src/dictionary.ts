@@ -160,8 +160,8 @@ export class DictionaryManager {
                 const rawCats = frame["_item.category_id"];
 
                 if (rawNames) {
-                    const names: any[] = Array.isArray(rawNames) ? rawNames : [rawNames];
-                    const cats: any[] = Array.isArray(rawCats) ? rawCats : [rawCats];
+                    const names = (Array.isArray(rawNames) ? rawNames : [rawNames]) as string[];
+                    const cats = (Array.isArray(rawCats) ? rawCats : [rawCats]) as string[];
 
                     const desc = this.extractString(frame["_item_description.description"]);
 
@@ -229,24 +229,6 @@ export class DictionaryManager {
     }
 
     /**
-     * Detect dictionary type from document content (legacy method for backward compatibility)
-     * @deprecated Use detectDictionaryTypeFromDocument instead
-     */
-    public detectDictionaryType(documentText: string): DictionaryType {
-        // Look for _audit_conform.dict_name in the first ~500 lines
-        const lines = documentText.split('\n').slice(0, DICTIONARY_DETECTION_LINE_LIMIT);
-        for (const line of lines) {
-            if (line.includes('_audit_conform.dict_name')) {
-                if (line.includes('mmcif_ma.dic')) {
-                    return 'mmcif_ma';
-                }
-            }
-        }
-        // Default to PDBx dictionary
-        return 'mmcif_pdbx';
-    }
-
-    /**
      * Set dictionary type for a document
      */
     public async setDocumentDictionary(document: vscode.TextDocument): Promise<DictionaryType> {
@@ -257,6 +239,13 @@ export class DictionaryManager {
         await this.loadDictionaryByType(dictType);
 
         return dictType;
+    }
+
+    /**
+     * Remove document tracking data (called when document is closed)
+     */
+    public removeDocument(uri: string): void {
+        this.documentDictTypes.delete(uri);
     }
 
     /**

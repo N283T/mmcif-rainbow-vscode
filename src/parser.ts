@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { RAINBOW_COLOR_COUNT } from './constants';
 import { Logger } from './logger';
 
 // --- Public interfaces (consumed by all downstream features) ---
@@ -13,6 +12,10 @@ export interface FieldDef {
     length: number;
     /** Field name without category prefix, e.g. "id" from "_entry.id" */
     fieldName: string;
+    /** Character offset of the category prefix (e.g. "_entry.") */
+    categoryStart: number;
+    /** Length of the category prefix including the dot */
+    categoryLength: number;
 }
 
 export interface ValueRange {
@@ -60,7 +63,7 @@ interface ParserBlock {
     fieldNames: FieldDef[];
     dataRows: DataRow[];
     isLoop: boolean;
-    namesDefined: boolean;
+    headerComplete: boolean;
     processedValueCount: number;
 }
 
@@ -131,9 +134,9 @@ export class CifParser {
         );
     }
 
-    public parseBlocks(document: vscode.TextDocument, builder?: vscode.SemanticTokensBuilder): CategoryBlock[] {
+    public parseBlocks(document: vscode.TextDocument): CategoryBlock[] {
         try {
-            return this.doParseBlocks(document, builder);
+            return this.doParseBlocks(document);
         } catch (error) {
             Logger.getInstance().error('Error parsing document', error);
             return [];
@@ -149,7 +152,7 @@ export class CifParser {
         };
     }
 
-    private doParseBlocks(document: vscode.TextDocument, builder?: vscode.SemanticTokensBuilder): CategoryBlock[] {
+    private doParseBlocks(document: vscode.TextDocument): CategoryBlock[] {
         const blocks: CategoryBlock[] = [];
         let current: ParserBlock | null = null;
         let multiLineMode = false;
@@ -170,7 +173,7 @@ export class CifParser {
 
             // Skip comment lines
             if (firstChar === "#") {
-                if (current && current.fieldNames.length > 0 && current.namesDefined) {
+                if (current && current.fieldNames.length > 0 && current.headerComplete) {
                     emitCurrent();
                 }
                 continue;
@@ -183,7 +186,6 @@ export class CifParser {
                     multiLineMode = false;
                     if (current) {
                         const colIndex = this.currentColumnIndex(current);
-                        const tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
 
                         current.dataRows.push({
                             line: i,
@@ -198,11 +200,9 @@ export class CifParser {
                                 current.dataRows[j].multiLineRange = range;
                             }
                         }
-
-                        if (builder) { builder.push(i, 0, lineText.length, tokenTypeIndex, 0); }
                     }
                     if (current && current.fieldNames.length > 0) {
-                        current.namesDefined = true;
+                        current.headerComplete = true;
                     }
                 } else {
                     // Start of multi-line string
@@ -211,14 +211,11 @@ export class CifParser {
                     multiLineDataRowStartIdx = current ? current.dataRows.length : -1;
                     if (current) {
                         const colIndex = this.currentColumnIndex(current);
-                        const tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
 
                         current.dataRows.push({
                             line: i,
                             valueRanges: [{ start: 0, length: lineText.length, columnIndex: colIndex }]
                         });
-
-                        if (builder) { builder.push(i, 0, lineText.length, tokenTypeIndex, 0); }
                     }
                 }
                 continue;
@@ -233,19 +230,14 @@ export class CifParser {
                         line: i,
                         valueRanges: [{ start: 0, length: lineText.length, columnIndex: colIndex }]
                     });
-
-                    if (builder && lineText.length > 0) {
-                        const tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
-                        builder.push(i, 0, lineText.length, tokenTypeIndex, 0);
-                    }
                 }
                 continue;
             }
 
             const trimmed = lineText.trim();
             if (trimmed === "") {
-                if (current && current.fieldNames.length > 0 && !current.namesDefined) {
-                    current.namesDefined = true;
+                if (current && current.fieldNames.length > 0 && !current.headerComplete) {
+                    current.headerComplete = true;
                 }
                 continue;
             }
@@ -268,7 +260,7 @@ export class CifParser {
                     fieldNames: [],
                     dataRows: [],
                     isLoop: true,
-                    namesDefined: false,
+                    headerComplete: false,
                     processedValueCount: 0,
                 };
                 continue;
@@ -294,7 +286,7 @@ export class CifParser {
                     if (current) {
                         if (current.isLoop) {
                             // Inside a loop_ block
-                            if (current.namesDefined) {
+                            if (current.headerComplete) {
                                 // New data name after data rows means new block
                                 emitCurrent();
                             } else if (current.categoryName && current.categoryName !== categoryName) {
@@ -317,7 +309,7 @@ export class CifParser {
                             fieldNames: [],
                             dataRows: [],
                             isLoop: false,
-                            namesDefined: false,
+                            headerComplete: false,
                             processedValueCount: 0,
                         };
                     }
@@ -333,6 +325,8 @@ export class CifParser {
                         start: fieldStart,
                         length: fieldLength,
                         fieldName: fieldName,
+                        categoryStart: leadingSpaces,
+                        categoryLength: categoryName.length + 1,
                     });
 
                     // For non-loop blocks, inline values on the same line become data
@@ -357,14 +351,14 @@ export class CifParser {
                         if (valueRanges.length > 0) {
                             current.dataRows.push({ line: i, valueRanges });
                             current.processedValueCount += valueRanges.length;
-                            current.namesDefined = true;
+                            current.headerComplete = true;
                         }
                     }
                 }
             } else if (current && current.fieldNames.length > 0) {
                 // Data line (not a data name)
-                if (!current.namesDefined) {
-                    current.namesDefined = true;
+                if (!current.headerComplete) {
+                    current.headerComplete = true;
                 }
 
                 const valueRanges: ValueRange[] = [];

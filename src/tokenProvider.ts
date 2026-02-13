@@ -1,8 +1,6 @@
 import * as vscode from "vscode";
 import { CifParser } from "./parser";
 import { BlockCache } from "./blockCache";
-import { CursorHighlighter } from "./cursorHighlighter";
-import { PlddtColorizer } from "./plddtColorizer";
 import { RAINBOW_COLOR_COUNT } from "./constants";
 
 const rainbowTokenTypes = [
@@ -38,45 +36,31 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
     ): Promise<vscode.SemanticTokens> {
         const builder = new vscode.SemanticTokensBuilder(tokensLegend);
 
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        const blocks = this.parser.parseBlocks(document, builder);
+        const blocks = this.parser.parseBlocks(document);
 
         // Cache the blocks for other features
         BlockCache.set(document.uri, document.version, blocks);
-        CursorHighlighter.getInstance().updateEditor(vscode.window.activeTextEditor);
-        PlddtColorizer.getInstance().updateEditor(vscode.window.activeTextEditor);
 
         for (const block of blocks) {
-            // Color field names
+            // Color field names (category prefix + field name)
             for (let fieldIndex = 0; fieldIndex < block.fieldNames.length; fieldIndex++) {
                 const field = block.fieldNames[fieldIndex];
-                const lineText = document.lineAt(field.line).text;
-                const match = lineText.match(/^(\s*)(_[A-Za-z0-9_]+)\.([A-Za-z0-9_\[\]]+)(\s|$)/);
 
-                if (match) {
-                    const leadingSpaces = match[1]?.length || 0;
-                    const categoryName = match[2];
-                    const fieldName = match[3];
+                // Category part (e.g. "_atom_site.")
+                builder.push(field.line, field.categoryStart, field.categoryLength, 0, 0);
 
-                    // Category part (e.g. "_atom_site.")
-                    const categoryStart = leadingSpaces;
-                    const categoryLength = categoryName.length + 1;
-                    builder.push(field.line, categoryStart, categoryLength, 0, 0);
-
-                    // Field name part - uniform color by column index
-                    const fieldStart = leadingSpaces + categoryName.length + 1;
-                    const fieldLength = fieldName.length;
-                    const tokenTypeIndex = 1 + (fieldIndex % RAINBOW_COLOR_COUNT);
-                    builder.push(field.line, fieldStart, fieldLength, tokenTypeIndex, 0);
-                }
+                // Field name part - uniform color by column index
+                const tokenTypeIndex = 1 + (fieldIndex % RAINBOW_COLOR_COUNT);
+                builder.push(field.line, field.start, field.length, tokenTypeIndex, 0);
             }
 
             // Color data values - uniform color by column index
             for (const dataRow of block.dataRows) {
                 for (const valueRange of dataRow.valueRanges) {
-                    const tokenTypeIndex = 1 + (valueRange.columnIndex % RAINBOW_COLOR_COUNT);
-                    builder.push(dataRow.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
+                    if (valueRange.length > 0) {
+                        const tokenTypeIndex = 1 + (valueRange.columnIndex % RAINBOW_COLOR_COUNT);
+                        builder.push(dataRow.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
+                    }
                 }
             }
         }
