@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { CifParser as MmCifParser, LoopBlock } from "./parser";
-import { LoopCache } from "./loopCache";
+import { CifParser } from "./parser";
+import { BlockCache } from "./blockCache";
 import { CursorHighlighter } from "./cursorHighlighter";
 import { PlddtColorizer } from "./plddtColorizer";
 import { RAINBOW_COLOR_COUNT } from "./constants";
@@ -27,10 +27,10 @@ export const tokensLegend = new vscode.SemanticTokensLegend(
  * Provides semantic tokens for rainbow coloring of mmCIF files.
  */
 export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
-    private parser: MmCifParser;
+    private parser: CifParser;
 
     constructor() {
-        this.parser = new MmCifParser();
+        this.parser = new CifParser();
     }
 
     async provideDocumentSemanticTokens(
@@ -40,34 +40,17 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
 
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        const loops = this.parser.parseLoops(document, builder);
+        const blocks = this.parser.parseBlocks(document, builder);
 
-        // Cache the loops for other features
-        LoopCache.set(document.uri, document.version, loops);
-        // Use getInstance() to ensure consistent instance usage
+        // Cache the blocks for other features
+        BlockCache.set(document.uri, document.version, blocks);
         CursorHighlighter.getInstance().updateEditor(vscode.window.activeTextEditor);
         PlddtColorizer.getInstance().updateEditor(vscode.window.activeTextEditor);
 
-        let categoryItemCount = 0;
-        let lastCategory = "";
-
-        for (const loop of loops) {
-            let colorBaseIndex = 0;
-
-            if (loop.isInLoopBlock) {
-                lastCategory = "";
-            } else {
-                if (loop.categoryName !== lastCategory) {
-                    categoryItemCount = 0;
-                    lastCategory = loop.categoryName;
-                } else {
-                    categoryItemCount++;
-                }
-                colorBaseIndex = categoryItemCount;
-            }
-
-            for (let fieldIndex = 0; fieldIndex < loop.fieldNames.length; fieldIndex++) {
-                const field = loop.fieldNames[fieldIndex];
+        for (const block of blocks) {
+            // Color field names
+            for (let fieldIndex = 0; fieldIndex < block.fieldNames.length; fieldIndex++) {
+                const field = block.fieldNames[fieldIndex];
                 const lineText = document.lineAt(field.line).text;
                 const match = lineText.match(/^(\s*)(_[A-Za-z0-9_]+)\.([A-Za-z0-9_\[\]]+)(\s|$)/);
 
@@ -76,37 +59,24 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
                     const categoryName = match[2];
                     const fieldName = match[3];
 
+                    // Category part (e.g. "_atom_site.")
                     const categoryStart = leadingSpaces;
                     const categoryLength = categoryName.length + 1;
                     builder.push(field.line, categoryStart, categoryLength, 0, 0);
 
+                    // Field name part - uniform color by column index
                     const fieldStart = leadingSpaces + categoryName.length + 1;
                     const fieldLength = fieldName.length;
-
-                    let tokenTypeIndex: number;
-                    if (loop.isInLoopBlock) {
-                        tokenTypeIndex = 1 + (fieldIndex % RAINBOW_COLOR_COUNT);
-                    } else {
-                        tokenTypeIndex = 1 + (colorBaseIndex % RAINBOW_COLOR_COUNT);
-                    }
-
+                    const tokenTypeIndex = 1 + (fieldIndex % RAINBOW_COLOR_COUNT);
                     builder.push(field.line, fieldStart, fieldLength, tokenTypeIndex, 0);
                 }
             }
 
-            for (const dataLine of loop.dataLines || []) {
-                const maxCols = Math.min(loop.fieldNames.length, dataLine.valueRanges.length);
-                for (let col = 0; col < maxCols; col++) {
-                    const valueRange = dataLine.valueRanges[col];
-                    const colIndex = valueRange.columnIndex ?? col;
-
-                    let tokenTypeIndex: number;
-                    if (loop.isInLoopBlock) {
-                        tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
-                    } else {
-                        tokenTypeIndex = 1 + (colorBaseIndex % RAINBOW_COLOR_COUNT);
-                    }
-                    builder.push(dataLine.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
+            // Color data values - uniform color by column index
+            for (const dataRow of block.dataRows) {
+                for (const valueRange of dataRow.valueRanges) {
+                    const tokenTypeIndex = 1 + (valueRange.columnIndex % RAINBOW_COLOR_COUNT);
+                    builder.push(dataRow.line, valueRange.start, valueRange.length, tokenTypeIndex, 0);
                 }
             }
         }

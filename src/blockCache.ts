@@ -1,21 +1,21 @@
 import * as vscode from 'vscode';
-import { LoopBlock } from './parser';
+import { CategoryBlock } from './parser';
 
 /**
- * Simple cache to share parsed loops between SemanticTokensProvider,
+ * Simple cache to share parsed blocks between SemanticTokensProvider,
  * CursorHighlighter, HoverProvider, and PlddtColorizer.
  */
-export class LoopCache {
-    private static cache = new Map<string, { version: number, loops: LoopBlock[] }>();
+export class BlockCache {
+    private static cache = new Map<string, { version: number, blocks: CategoryBlock[] }>();
 
-    static set(uri: vscode.Uri, version: number, loops: LoopBlock[]) {
-        this.cache.set(uri.toString(), { version, loops });
+    static set(uri: vscode.Uri, version: number, blocks: CategoryBlock[]) {
+        this.cache.set(uri.toString(), { version, blocks });
     }
 
-    static get(uri: vscode.Uri, version: number): LoopBlock[] | undefined {
+    static get(uri: vscode.Uri, version: number): CategoryBlock[] | undefined {
         const entry = this.cache.get(uri.toString());
         if (entry && entry.version === version) {
-            return entry.loops;
+            return entry.blocks;
         }
         return undefined;
     }

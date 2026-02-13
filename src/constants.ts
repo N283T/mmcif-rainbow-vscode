@@ -3,7 +3,7 @@
  */
 
 /** Number of rainbow colors for column cycling */
-export const RAINBOW_COLOR_COUNT = 8;
+export const RAINBOW_COLOR_COUNT = 9;
 
 /** Maximum number of lines to scan for dictionary type detection */
 export const DICTIONARY_DETECTION_LINE_LIMIT = 500;

@@ -5,7 +5,7 @@ import { CursorHighlighter } from "./cursorHighlighter";
 import { PlddtColorizer } from "./plddtColorizer";
 import { DictionaryManager } from "./dictionary";
 import { SearchProvider } from "./searchProvider";
-import { LoopCache } from "./loopCache";
+import { BlockCache } from "./blockCache";
 import { Logger } from "./logger";
 import { debounce } from "./utils";
 import { CURSOR_UPDATE_DEBOUNCE_MS, PLDDT_UPDATE_DELAY_MS } from "./constants";
@@ -98,10 +98,10 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Clean up LoopCache when document is closed to prevent memory leaks
+  // Clean up BlockCache when document is closed to prevent memory leaks
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument(document => {
-      LoopCache.delete(document.uri);
+      BlockCache.delete(document.uri);
     })
   );
 

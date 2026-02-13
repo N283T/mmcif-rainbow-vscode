@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { LoopCache } from './loopCache';
+import { BlockCache } from './blockCache';
 import { DictionaryManager } from './dictionary';
 
 /**
@@ -12,15 +12,15 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
 
     provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Hover> {
         this.currentDocument = document;
-        const loops = LoopCache.get(document.uri, document.version);
-        if (!loops) return null;
+        const blocks = BlockCache.get(document.uri, document.version);
+        if (!blocks) return null;
 
-        for (const loop of loops) {
+        for (const block of blocks) {
             // Check if cursor is on a field name (header)
-            for (let i = 0; i < loop.fieldNames.length; i++) {
-                const field = loop.fieldNames[i];
+            for (let i = 0; i < block.fieldNames.length; i++) {
+                const field = block.fieldNames[i];
                 if (field.line === position.line) {
-                    const categoryName = loop.categoryName;
+                    const categoryName = block.categoryName;
                     const fieldName = field.fieldName;
 
                     const categoryStart = field.start - 1 - categoryName.length;
@@ -39,14 +39,21 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
             }
 
             // Check if cursor is on a data value
-            for (const dataLine of loop.dataLines) {
-                if (dataLine.line === position.line) {
-                    for (const valueRange of dataLine.valueRanges) {
+            for (const dataRow of block.dataRows) {
+                if (dataRow.line === position.line) {
+                    for (const valueRange of dataRow.valueRanges) {
                         if (position.character >= valueRange.start && position.character <= valueRange.start + valueRange.length) {
                             const columnIndex = valueRange.columnIndex;
-                            if (columnIndex < loop.fieldNames.length) {
-                                const field = loop.fieldNames[columnIndex];
-                                return this.createValueHover(loop.categoryName, field.fieldName);
+                            if (columnIndex < block.fieldNames.length) {
+                                const field = block.fieldNames[columnIndex];
+                                // For multi-line strings, use the full range so hover doesn't re-trigger per line
+                                const hoverRange = dataRow.multiLineRange
+                                    ? new vscode.Range(
+                                        dataRow.multiLineRange.startLine, 0,
+                                        dataRow.multiLineRange.endLine, document.lineAt(dataRow.multiLineRange.endLine).text.length
+                                    )
+                                    : undefined;
+                                return this.createValueHover(block.categoryName, field.fieldName, hoverRange);
                             }
                         }
                     }
@@ -56,11 +63,11 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
         return null;
     }
 
-    private createValueHover(categoryName: string, fieldName: string): vscode.Hover {
+    private createValueHover(categoryName: string, fieldName: string, range?: vscode.Range): vscode.Hover {
         const fullTagName = `${categoryName}.${fieldName}`;
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${fullTagName}**`);
-        return new vscode.Hover(md);
+        return new vscode.Hover(md, range);
     }
 
     private createCategoryHover(categoryName: string): vscode.Hover {
