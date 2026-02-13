@@ -4,7 +4,7 @@ All notable changes to the "mmcif-rainbow" extension will be documented in this 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.0.9] - 2026-02-13
 
 ### Changed
 - Separated parser from token rendering for cleaner architecture (parser no longer depends on SemanticTokensBuilder)
