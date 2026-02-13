@@ -8,7 +8,7 @@ import { SearchProvider } from "./searchProvider";
 import { BlockCache } from "./blockCache";
 import { Logger } from "./logger";
 import { debounce } from "./utils";
-import { CURSOR_UPDATE_DEBOUNCE_MS, PLDDT_UPDATE_DELAY_MS } from "./constants";
+import { CURSOR_UPDATE_DEBOUNCE_MS } from "./constants";
 
 export function activate(context: vscode.ExtensionContext) {
   const provider = new MmCifTokenProvider();
@@ -45,6 +45,17 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
+  // Update decorations after semantic tokens are computed (BlockCache is now populated)
+  context.subscriptions.push(
+    provider.onDidProvideTokens(document => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor && editor.document === document) {
+        cursorHighlighter.updateEditor(editor);
+        plddtColorizer.updateEditor(editor);
+      }
+    })
+  );
+
   // Register hover provider
   context.subscriptions.push(
     vscode.languages.registerHoverProvider(selector, new MmCifHoverProvider(dictManager))
@@ -76,19 +87,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.onDidChangeActiveTextEditor(editor => {
       cursorHighlighter.updateEditor(editor);
       plddtColorizer.updateEditor(editor);
-    })
-  );
-
-  // Update decorations when document content changes (after semantic tokens re-parse)
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeTextDocument(event => {
-      const editor = vscode.window.activeTextEditor;
-      if (editor && editor.document === event.document) {
-        setTimeout(() => {
-          cursorHighlighter.updateEditor(editor);
-          plddtColorizer.updateEditor(editor);
-        }, PLDDT_UPDATE_DELAY_MS);
-      }
     })
   );
 
