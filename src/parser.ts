@@ -192,9 +192,11 @@ export class CifParser {
                         current.processedValueCount++;
 
                         // Set multiLineRange on all rows in this multi-line block
-                        const range = { startLine: multiLineStartLine, endLine: i };
-                        for (let j = multiLineDataRowStartIdx; j < current.dataRows.length; j++) {
-                            current.dataRows[j].multiLineRange = range;
+                        if (multiLineDataRowStartIdx >= 0) {
+                            const range = { startLine: multiLineStartLine, endLine: i };
+                            for (let j = multiLineDataRowStartIdx; j < current.dataRows.length; j++) {
+                                current.dataRows[j].multiLineRange = range;
+                            }
                         }
 
                         if (builder) { builder.push(i, 0, lineText.length, tokenTypeIndex, 0); }
@@ -273,7 +275,7 @@ export class CifParser {
             }
 
             // Data name (_category.field)
-            if (tokens.length > 0 && this.isDataName(tokens[0])) {
+            if (this.isDataName(tokens[0])) {
                 const dataName = tokens[0][0];
                 const match = dataName.match(/^(_[A-Za-z0-9_]+)\.([A-Za-z0-9_\[\]]+)$/);
 

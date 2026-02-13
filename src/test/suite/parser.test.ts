@@ -153,6 +153,13 @@ suite('CifParser Test Suite', () => {
         assert.ok(block.dataRows.find(d => d.line === 2), 'Opening semi-colon line should be in dataRows');
         assert.ok(block.dataRows.find(d => d.line === 3), 'Content line should be in dataRows');
         assert.ok(block.dataRows.find(d => d.line === 4), 'Closing semi-colon line should be in dataRows');
+
+        // All multi-line rows should share the same multiLineRange
+        for (const row of block.dataRows) {
+            assert.ok(row.multiLineRange, `Line ${row.line} should have multiLineRange`);
+            assert.strictEqual(row.multiLineRange!.startLine, 2, `Line ${row.line} multiLineRange.startLine`);
+            assert.strictEqual(row.multiLineRange!.endLine, 4, `Line ${row.line} multiLineRange.endLine`);
+        }
     });
 
     test('Non-loop multi-line string gets correct columnIndex', () => {
