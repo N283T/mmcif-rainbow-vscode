@@ -29,7 +29,6 @@ suite('Dictionary Manager Test Suite', () => {
         // Check alias/derived item
         const labelItem = manager.getItem('atom_site', 'label_atom_id');
         assert.ok(labelItem, '_atom_site.label_atom_id should be present');
-        console.log('label_atom_id description:', labelItem.description.substring(0, 50) + '...');
         assert.ok(labelItem.description.length > 0, 'label_atom_id should have description');
     });
 });

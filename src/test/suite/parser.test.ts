@@ -252,7 +252,8 @@ suite('CifParser Test Suite', () => {
         ];
         const doc = createMockDocument(lines);
         const blocks = parser.parseBlocks(doc);
-        assert.ok(blocks.length >= 0);
+        // Empty loop_ followed by data_ should produce no blocks
+        assert.strictEqual(blocks.length, 0);
     });
 
     test('Handles unclosed multi-line string', () => {
@@ -264,7 +265,9 @@ suite('CifParser Test Suite', () => {
         ];
         const doc = createMockDocument(lines);
         const blocks = parser.parseBlocks(doc);
-        assert.ok(blocks.length >= 0);
+        // Should still produce a block with the field definition
+        assert.strictEqual(blocks.length, 1);
+        assert.strictEqual(blocks[0].fieldNames[0].fieldName, 'value');
     });
 
     test('Handles malformed category name', () => {
@@ -274,7 +277,8 @@ suite('CifParser Test Suite', () => {
         ];
         const doc = createMockDocument(lines);
         const blocks = parser.parseBlocks(doc);
-        assert.ok(blocks.length >= 0);
+        // _invalid has no dot separator, so it should not produce a category block
+        assert.strictEqual(blocks.length, 0);
     });
 
     test('Handles very long lines', () => {
@@ -309,6 +313,43 @@ suite('CifParser Test Suite', () => {
         ];
         const doc = createMockDocument(lines);
         const blocks = parser.parseBlocks(doc);
-        assert.ok(blocks.length >= 0);
+        // save_ blocks should emit the contained item
+        assert.strictEqual(blocks.length, 1);
+        assert.strictEqual(blocks[0].fieldNames[0].fieldName, 'value');
+    });
+
+    // --- FieldDef categoryStart/categoryLength ---
+
+    test('FieldDef includes categoryStart and categoryLength', () => {
+        const lines = [
+            'data_TEST',
+            '_entry.id TEST'
+        ];
+        const doc = createMockDocument(lines);
+        const blocks = parser.parseBlocks(doc);
+
+        assert.strictEqual(blocks.length, 1);
+        const field = blocks[0].fieldNames[0];
+        assert.strictEqual(field.categoryStart, 0);    // "_entry." starts at 0
+        assert.strictEqual(field.categoryLength, 7);    // "_entry." is 7 chars
+        assert.strictEqual(field.start, 7);              // "id" starts at 7
+        assert.strictEqual(field.length, 2);             // "id" is 2 chars
+    });
+
+    test('FieldDef with leading spaces has correct categoryStart', () => {
+        const lines = [
+            'loop_',
+            '  _atom_site.id',
+            '1'
+        ];
+        const doc = createMockDocument(lines);
+        const blocks = parser.parseBlocks(doc);
+
+        assert.strictEqual(blocks.length, 1);
+        const field = blocks[0].fieldNames[0];
+        assert.strictEqual(field.categoryStart, 2);     // 2 leading spaces
+        assert.strictEqual(field.categoryLength, 11);    // "_atom_site." is 11 chars
+        assert.strictEqual(field.start, 13);              // "id" starts at 13
+        assert.strictEqual(field.length, 2);
     });
 });

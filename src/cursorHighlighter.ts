@@ -48,7 +48,7 @@ export class CursorHighlighter implements vscode.Disposable {
             for (let i = 0; i < block.fieldNames.length; i++) {
                 const field = block.fieldNames[i];
                 if (field.line === position.line) {
-                    if (position.character >= field.start && position.character <= field.start + field.length) {
+                    if (position.character >= field.start && position.character < field.start + field.length) {
                         targetColumnIndex = i;
                         break;
                     }
@@ -60,7 +60,7 @@ export class CursorHighlighter implements vscode.Disposable {
                 for (const dataRow of block.dataRows) {
                     if (dataRow.line === position.line) {
                         for (const valueRange of dataRow.valueRanges) {
-                            if (position.character >= valueRange.start && position.character <= valueRange.start + valueRange.length) {
+                            if (position.character >= valueRange.start && position.character < valueRange.start + valueRange.length) {
                                 targetColumnIndex = valueRange.columnIndex;
                                 break;
                             }

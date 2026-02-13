@@ -79,12 +79,15 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Update pLDDT coloring when document content changes
+  // Update decorations when document content changes (after semantic tokens re-parse)
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument(event => {
       const editor = vscode.window.activeTextEditor;
       if (editor && editor.document === event.document) {
-        setTimeout(() => plddtColorizer.updateEditor(editor), PLDDT_UPDATE_DELAY_MS);
+        setTimeout(() => {
+          cursorHighlighter.updateEditor(editor);
+          plddtColorizer.updateEditor(editor);
+        }, PLDDT_UPDATE_DELAY_MS);
       }
     })
   );
@@ -98,10 +101,11 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Clean up BlockCache when document is closed to prevent memory leaks
+  // Clean up caches when document is closed to prevent memory leaks
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument(document => {
       BlockCache.delete(document.uri);
+      dictManager.removeDocument(document.uri.toString());
     })
   );
 
