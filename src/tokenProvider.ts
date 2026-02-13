@@ -23,9 +23,13 @@ export const tokensLegend = new vscode.SemanticTokensLegend(
 
 /**
  * Provides semantic tokens for rainbow coloring of mmCIF files.
+ * Fires onDidProvideTokens after blocks are parsed and cached,
+ * so decoration providers (pLDDT, cursor highlight) can update.
  */
 export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider {
     private parser: CifParser;
+    private readonly _onDidProvideTokens = new vscode.EventEmitter<vscode.TextDocument>();
+    readonly onDidProvideTokens = this._onDidProvideTokens.event;
 
     constructor() {
         this.parser = new CifParser();
@@ -38,8 +42,9 @@ export class MmCifTokenProvider implements vscode.DocumentSemanticTokensProvider
 
         const blocks = this.parser.parseBlocks(document);
 
-        // Cache the blocks for other features
+        // Cache the blocks for other features and notify listeners
         BlockCache.set(document.uri, document.version, blocks);
+        this._onDidProvideTokens.fire(document);
 
         for (const block of blocks) {
             // Color field names (category prefix + field name)
