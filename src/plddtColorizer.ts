@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { LoopCache } from './loopCache';
+import { BlockCache } from './blockCache';
 import { DICTIONARY_DETECTION_LINE_LIMIT, PLDDT_THRESHOLDS, PLDDT_COLORS } from './constants';
 
 /**
@@ -70,20 +70,6 @@ export class PlddtColorizer implements vscode.Disposable {
     }
 
     /**
-     * @deprecated Use getInstance().isModelCif() instead
-     */
-    static isModelCif(document: vscode.TextDocument): boolean {
-        return PlddtColorizer.getInstance().isModelCif(document);
-    }
-
-    /**
-     * @deprecated Use getInstance().updateEditor() instead
-     */
-    static update(editor: vscode.TextEditor | undefined): void {
-        PlddtColorizer.getInstance().updateEditor(editor);
-    }
-
-    /**
      * Update pLDDT coloring for the given editor
      */
     updateEditor(editor: vscode.TextEditor | undefined): void {
@@ -101,8 +87,8 @@ export class PlddtColorizer implements vscode.Disposable {
             return;
         }
 
-        const loops = LoopCache.get(document.uri, document.version);
-        if (!loops) {
+        const blocks = BlockCache.get(document.uri, document.version);
+        if (!blocks) {
             return;
         }
 
@@ -111,14 +97,14 @@ export class PlddtColorizer implements vscode.Disposable {
         const lowRanges: vscode.Range[] = [];
         const veryLowRanges: vscode.Range[] = [];
 
-        for (const loop of loops) {
-            if (!loop.categoryName.includes('atom_site')) {
+        for (const block of blocks) {
+            if (!block.categoryName.includes('atom_site')) {
                 continue;
             }
 
             let bIsoColumnIndex = -1;
-            for (let i = 0; i < loop.fieldNames.length; i++) {
-                if (loop.fieldNames[i].fieldName === 'B_iso_or_equiv') {
+            for (let i = 0; i < block.fieldNames.length; i++) {
+                if (block.fieldNames[i].fieldName === 'B_iso_or_equiv') {
                     bIsoColumnIndex = i;
                     break;
                 }
@@ -128,10 +114,10 @@ export class PlddtColorizer implements vscode.Disposable {
                 continue;
             }
 
-            for (const dataLine of loop.dataLines) {
-                for (const valueRange of dataLine.valueRanges) {
+            for (const dataRow of block.dataRows) {
+                for (const valueRange of dataRow.valueRanges) {
                     if (valueRange.columnIndex === bIsoColumnIndex) {
-                        const lineText = document.lineAt(dataLine.line).text;
+                        const lineText = document.lineAt(dataRow.line).text;
                         const valueText = lineText.substring(
                             valueRange.start,
                             valueRange.start + valueRange.length
@@ -143,8 +129,8 @@ export class PlddtColorizer implements vscode.Disposable {
                         }
 
                         const range = new vscode.Range(
-                            dataLine.line, valueRange.start,
-                            dataLine.line, valueRange.start + valueRange.length
+                            dataRow.line, valueRange.start,
+                            dataRow.line, valueRange.start + valueRange.length
                         );
 
                         if (plddt > PLDDT_THRESHOLDS.VERY_HIGH) {

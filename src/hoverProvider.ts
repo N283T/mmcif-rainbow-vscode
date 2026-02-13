@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { LoopCache } from './loopCache';
+import { BlockCache } from './blockCache';
 import { DictionaryManager } from './dictionary';
 
 /**
@@ -12,15 +12,15 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
 
     provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Hover> {
         this.currentDocument = document;
-        const loops = LoopCache.get(document.uri, document.version);
-        if (!loops) return null;
+        const blocks = BlockCache.get(document.uri, document.version);
+        if (!blocks) return null;
 
-        for (const loop of loops) {
+        for (const block of blocks) {
             // Check if cursor is on a field name (header)
-            for (let i = 0; i < loop.fieldNames.length; i++) {
-                const field = loop.fieldNames[i];
+            for (let i = 0; i < block.fieldNames.length; i++) {
+                const field = block.fieldNames[i];
                 if (field.line === position.line) {
-                    const categoryName = loop.categoryName;
+                    const categoryName = block.categoryName;
                     const fieldName = field.fieldName;
 
                     const categoryStart = field.start - 1 - categoryName.length;
@@ -39,14 +39,14 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
             }
 
             // Check if cursor is on a data value
-            for (const dataLine of loop.dataLines) {
-                if (dataLine.line === position.line) {
-                    for (const valueRange of dataLine.valueRanges) {
+            for (const dataRow of block.dataRows) {
+                if (dataRow.line === position.line) {
+                    for (const valueRange of dataRow.valueRanges) {
                         if (position.character >= valueRange.start && position.character <= valueRange.start + valueRange.length) {
                             const columnIndex = valueRange.columnIndex;
-                            if (columnIndex < loop.fieldNames.length) {
-                                const field = loop.fieldNames[columnIndex];
-                                return this.createValueHover(loop.categoryName, field.fieldName);
+                            if (columnIndex < block.fieldNames.length) {
+                                const field = block.fieldNames[columnIndex];
+                                return this.createValueHover(block.categoryName, field.fieldName);
                             }
                         }
                     }
