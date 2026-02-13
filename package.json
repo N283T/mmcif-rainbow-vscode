@@ -46,46 +46,16 @@
       {
         "language": "mmcif",
         "scopes": {
-          "rainbow1": [
-            "entity.name.type",
-            "entity.name.class"
-          ],
-          "rainbow2": [
-            "keyword",
-            "storage.type"
-          ],
-          "rainbow3": [
-            "string",
-            "string.quoted"
-          ],
-          "rainbow4": [
-            "variable.parameter",
-            "variable.other"
-          ],
-          "rainbow5": [
-            "constant.numeric",
-            "constant.language"
-          ],
-          "rainbow6": [
-            "support.function",
-            "entity.name.function"
-          ],
-          "rainbow7": [
-            "support.class",
-            "support.type"
-          ],
-          "rainbow8": [
-            "entity.name.section",
-            "markup.heading"
-          ],
-          "rainbow9": [
-            "keyword.control",
-            "keyword.operator"
-          ],
-          "rainbow10": [
-            "variable.language",
-            "constant.character"
-          ]
+          "rainbow1": ["entity.name.tag.mmcif"],
+          "rainbow2": ["keyword.mmcif"],
+          "rainbow3": ["string.mmcif"],
+          "rainbow4": ["entity.name.function.mmcif"],
+          "rainbow5": ["constant.numeric.mmcif"],
+          "rainbow6": ["variable.parameter.mmcif"],
+          "rainbow7": ["support.function.mmcif"],
+          "rainbow8": ["entity.name.type.mmcif"],
+          "rainbow9": ["markup.heading.mmcif"],
+          "rainbow10": ["constant.language.mmcif"]
         }
       }
     ],
@@ -93,6 +63,20 @@
       "[mmcif]": {
         "editor.semanticHighlighting.enabled": true,
         "editor.bracketPairColorization.enabled": false
+      },
+      "editor.semanticTokenColorCustomizations": {
+        "rules": {
+          "rainbow1:mmcif": "#8B8FE8",
+          "rainbow2:mmcif": "#E06C75",
+          "rainbow3:mmcif": "#98C379",
+          "rainbow4:mmcif": "#E5C07B",
+          "rainbow5:mmcif": "#61AFEF",
+          "rainbow6:mmcif": "#C678DD",
+          "rainbow7:mmcif": "#56B6C2",
+          "rainbow8:mmcif": "#D19A66",
+          "rainbow9:mmcif": "#FF79C6",
+          "rainbow10:mmcif": "#7FDBCA"
+        }
       }
     },
     "configuration": {

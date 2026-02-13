@@ -3,14 +3,6 @@
   "name": "mmCIF",
   "patterns": [
     {
-      "name": "comment.line.number-sign.mmcif",
-      "match": "#.*$"
-    },
-    {
-      "name": "keyword.control.loop.mmcif",
-      "match": "\\bloop_\\b"
-    },
-    {
       "name": "keyword.control.data.mmcif",
       "match": "\\bdata_[A-Za-z0-9_.-]*"
     },

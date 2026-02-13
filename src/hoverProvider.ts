@@ -46,7 +46,14 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
                             const columnIndex = valueRange.columnIndex;
                             if (columnIndex < block.fieldNames.length) {
                                 const field = block.fieldNames[columnIndex];
-                                return this.createValueHover(block.categoryName, field.fieldName);
+                                // For multi-line strings, use the full range so hover doesn't re-trigger per line
+                                const hoverRange = dataRow.multiLineRange
+                                    ? new vscode.Range(
+                                        dataRow.multiLineRange.startLine, 0,
+                                        dataRow.multiLineRange.endLine, document.lineAt(dataRow.multiLineRange.endLine).text.length
+                                    )
+                                    : undefined;
+                                return this.createValueHover(block.categoryName, field.fieldName, hoverRange);
                             }
                         }
                     }
@@ -56,11 +63,11 @@ export class MmCifHoverProvider implements vscode.HoverProvider {
         return null;
     }
 
-    private createValueHover(categoryName: string, fieldName: string): vscode.Hover {
+    private createValueHover(categoryName: string, fieldName: string, range?: vscode.Range): vscode.Hover {
         const fullTagName = `${categoryName}.${fieldName}`;
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${fullTagName}**`);
-        return new vscode.Hover(md);
+        return new vscode.Hover(md, range);
     }
 
     private createCategoryHover(categoryName: string): vscode.Hover {

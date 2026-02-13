@@ -29,6 +29,8 @@ export interface DataRow {
     line: number;
     /** Value positions on this line */
     valueRanges: ValueRange[];
+    /** If part of a multi-line string (;...;), the full line range */
+    multiLineRange?: { startLine: number; endLine: number };
 }
 
 /**
@@ -151,6 +153,8 @@ export class CifParser {
         const blocks: CategoryBlock[] = [];
         let current: ParserBlock | null = null;
         let multiLineMode = false;
+        let multiLineStartLine = -1;
+        let multiLineDataRowStartIdx = -1;
 
         const emitCurrent = () => {
             if (current && current.fieldNames.length > 0) {
@@ -187,6 +191,12 @@ export class CifParser {
                         });
                         current.processedValueCount++;
 
+                        // Set multiLineRange on all rows in this multi-line block
+                        const range = { startLine: multiLineStartLine, endLine: i };
+                        for (let j = multiLineDataRowStartIdx; j < current.dataRows.length; j++) {
+                            current.dataRows[j].multiLineRange = range;
+                        }
+
                         if (builder) { builder.push(i, 0, lineText.length, tokenTypeIndex, 0); }
                     }
                     if (current && current.fieldNames.length > 0) {
@@ -195,6 +205,8 @@ export class CifParser {
                 } else {
                     // Start of multi-line string
                     multiLineMode = true;
+                    multiLineStartLine = i;
+                    multiLineDataRowStartIdx = current ? current.dataRows.length : -1;
                     if (current) {
                         const colIndex = this.currentColumnIndex(current);
                         const tokenTypeIndex = 1 + (colIndex % RAINBOW_COLOR_COUNT);
