@@ -59,8 +59,21 @@ jobs:
             - name: Package Extension
               run: npx vsce package
 
+            - name: Extract Release Notes from CHANGELOG
+              id: changelog
+              run: |
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  # Extract the section between ## [VERSION] and the next ## [
+                  NOTES=$(awk "/^## \\[${VERSION}\\]/{found=1; next} /^## \\[/{if(found) exit} found{print}" CHANGELOG.md)
+                  if [ -z "$NOTES" ]; then
+                    echo "Warning: No CHANGELOG entry found for version ${VERSION}" >&2
+                    NOTES="Release ${VERSION}"
+                  fi
+                  # Write to file to preserve multiline content
+                  echo "$NOTES" > release_notes.md
+
             - name: Create Release
-              uses: softprops/action-gh-release@v1
+              uses: softprops/action-gh-release@v2
               with:
                   files: "*.vsix"
-                  generate_release_notes: true
+                  body_path: release_notes.md
