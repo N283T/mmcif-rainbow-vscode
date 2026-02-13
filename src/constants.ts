@@ -11,9 +11,6 @@ export const DICTIONARY_DETECTION_LINE_LIMIT = 500;
 /** Debounce delay for cursor update events in milliseconds */
 export const CURSOR_UPDATE_DEBOUNCE_MS = 50;
 
-/** Delay for pLDDT update after document change in milliseconds */
-export const PLDDT_UPDATE_DELAY_MS = 100;
-
 /** Duration for search highlight flash in milliseconds */
 export const SEARCH_HIGHLIGHT_DURATION_MS = 1500;
 

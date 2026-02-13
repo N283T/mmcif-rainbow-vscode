@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- Token provider now emits `onDidProvideTokens` event for decoration providers, fixing pLDDT/cursor timing
 - Separated parser from token rendering for cleaner architecture (parser no longer depends on SemanticTokensBuilder)
 - Unified `CategoryBlock` model replacing old `LoopBlock` with `isInLoopBlock` branching
 - Improved color palette with explicit default colors (inspired by Rainbow CSV), preventing category-attribute color collision
@@ -16,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Removed side effects from token provider (decoration updates now managed by extension lifecycle)
 
 ### Fixed
+- pLDDT confidence coloring not applied on initial file open (decoration triggered before BlockCache populated)
 - Multi-line string (`;...;`) hover now shows as a single unified tooltip instead of per-line
 - Off-by-one error in cursor highlighting and hover bounds checks (`<=` to `<`)
 - Imprecise category matching in pLDDT colorizer (`includes` to exact match)
